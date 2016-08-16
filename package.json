@@ -1,0 +1,57 @@
+{
+  "name": "app-audio",
+  "version": "1.0.0",
+  "description": "Audio source input for your application, demo or tests.",
+  "main": "index.js",
+  "scripts": {
+    "test": "budo test.js",
+    "test:browser": "budo test.js -- -g bubleify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://audio-lab.github.com/input-audio"
+  },
+  "browserify": {
+    "transform": [
+      "brfs"
+    ]
+  },
+  "keywords": [
+    "audio",
+    "web-audio",
+    "sound-input",
+    "input-audio",
+    "source",
+    "input",
+    "waa",
+    "web-audio-player",
+    "sound",
+    "mp3",
+    "xhr",
+    "buffer",
+    "microphone",
+    "sfx",
+    "play"
+  ],
+  "author": "ΔY <dfcreative@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "audio-context": "^0.1.0",
+    "brfs": "^1.4.3",
+    "color-alpha": "^1.0.0",
+    "get-float-time-domain-data": "^0.1.0",
+    "inherits": "^2.0.1",
+    "insert-styles": "^1.2.1",
+    "is-mobile": "^0.2.2",
+    "is-plain-obj": "^1.1.0",
+    "is-url": "^1.2.2",
+    "just-extend": "^1.1.21",
+    "querystring": "^0.2.0",
+    "web-audio-player": "^1.2.0",
+    "xhr": "^2.2.2"
+  },
+  "devDependencies": {
+    "nice-color-palettes": "^1.0.1",
+    "settings-panel": "^1.8.8"
+  }
+}

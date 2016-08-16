@@ -1,0 +1,121 @@
+/** Default styles reset */
+.app-audio [hidden] {
+	display: none!important;
+}
+.app-audio input[type=file],
+.app-audio input[type=file]::-webkit-file-upload-button {
+	cursor: pointer;
+}
+.app-audio i {
+	fill: currentColor;
+	width: 1.4rem;
+	height: 1.4rem;
+	position: relative;
+	display: inline-block;
+	font-style: normal;
+	vertical-align: top;
+}
+.app-audio i {
+}
+.app-audio i svg {
+	margin-bottom: -.375rem;
+	max-width: 100%;
+	max-height: 100%;
+}
+.app-audio a {
+	color: inherit;
+}
+
+
+/** Components */
+.app-audio {
+	position: absolute;
+	top: 0;
+	left: 0;
+	line-height: 2rem;
+	font-family: sans-serif;
+	padding: 0 .5rem;
+}
+
+.aa-input {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	border: 0;
+	border-radius: 0;
+	background: none;
+	padding: 0;
+	margin: 0;
+	outline: none;
+	font-size: 1rem;
+	display: inline;
+	line-height: 2;
+	color: inherit;
+}
+
+
+/** Drag and Drop */
+.app-audio-container:after {
+	content: '';
+}
+.aa-dragover:after {
+	content: '⎗';
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
+	width: 20vh;
+	height: 20vh;
+	z-index: 2;
+	font-size: 20vh;
+	text-align: center;
+	line-height: 20vh;
+	display: block;
+}
+.aa-dragover:before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	margin: 0;
+	border: .2em dashed;
+	z-index: 1;
+	display: block;
+}
+.aa-dragover .aa-button {
+	display: none;
+}
+
+
+/** Dropdown */
+.aa-dropdown {
+	position: absolute;
+	box-shadow: 0 0 1px rgba(128,128,128,.5);
+	list-style: none;
+	font-family: sans-serif;
+	line-height: 2rem;
+	padding: 0;
+	top: 100%;
+	margin: 0;
+	margin-left: -.5rem;
+}
+.aa-item {
+	cursor: pointer;
+	padding: 0 .5rem;
+	position: relative;
+}
+.aa-item:hover:after {
+	content: '';
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	top: 0;
+	background: currentColor;
+	opacity: .25;
+}
+
