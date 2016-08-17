@@ -86,6 +86,11 @@ color: 'black'
 ```
 
 </details>
+<details><summary>**`appAudio.setSource(list)`**</summary>
+
+Set source to play.
+
+</details>
 <details><summary>**`appAudio.show(data)`**</summary>
 
 Show source menu.
@@ -99,11 +104,6 @@ Hide source menu.
 <details><summary>**`appAudio.update(options?)`**</summary>
 
 Update options, if required. Like, palette, grid type etc.
-
-</details>
-<details><summary>**`appAudio.setSource(list)`**</summary>
-
-Set source to play.
 
 </details>
 

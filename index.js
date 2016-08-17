@@ -195,12 +195,82 @@ AppAudio.prototype.init = function init (opts) {
 	});
 
 	//create progress
-	this.progressEl = document.createElement('ul');
+	this.progressEl = document.createElement('div');
 	this.progressEl.className = 'aa-progress';
 	this.container.appendChild(this.progressEl);
 
+	//create drag n drop
+	if (this.dragAndDrop) {
+		let count = 0;
+		let title;
+		let that = this;
+
+		this.dropEl = document.createElement('div');
+		this.dropEl.className = 'aa-drop';
+		this.container.appendChild(this.dropEl);
+
+		// this.container.addEventListener('dragstart', (e) => {
+			//ignore dragging the container
+			//FIXME: maybe we need a bit more specifics here, by inner elements
+		// 	e.preventDefault();
+		// 	return false;
+		// }, false);
+		this.container.addEventListener('dragover', (e) => {
+			e.preventDefault();
+		}, false);
+
+		this.container.addEventListener('drop', (e) => {
+			e.preventDefault();
+			dragleave(e);
+
+			var dt = e.dataTransfer;
+			// that.setSource(dt.files, () => {
+				//that.restoreState();
+			// });
+		}, false);
+
+		this.container.addEventListener('dragenter', dragenter);
+
+
+		function dragenter (e) {
+			count++;
+
+			if (count > 1) return;
+
+			that.container.classList.add('aa-dragover');
+			that.container.addEventListener('dragleave', dragleave, false);
+
+			e.dataTransfer.dropEffect = 'copy';
+			let items = e.dataTransfer.items;
+
+			that.saveState();
+			console.log(items.length)
+			that.info(items.length < 2 ? `Drop audio file` : `Drop audio files`, that.icons.record);
+		}
+		function dragleave (e) {
+			count--;
+
+			//non-zero count means were still inside
+			if (count) return;
+
+			count = 0;
+			that.container.removeEventListener('dragleave', dragleave);
+			that.container.classList.remove('aa-dragover');
+			that.restoreState();
+		}
+	}
+
 	this.update(opts);
 };
+
+//Save/restore state technical methods
+AppAudio.prototype.saveState = function () {
+	this.lastTitle = this.inputEl.value;
+	this.lastIcon = this.iconEl.innerHTML;
+}
+AppAudio.prototype.restoreState = function () {
+	this.info(this.lastTitle, this.lastIcon);
+}
 
 
 //keep app state updated
@@ -220,6 +290,8 @@ AppAudio.prototype.update = function update (opts) {
 
 	//apply color
 	this.element.style.color = this.color;
+	this.progressEl.style.color = this.color;
+	this.dropEl.style.color = this.color;
 };
 
 
@@ -298,7 +370,7 @@ AppAudio.prototype.setSource = function (src) {
 
 //Display error for a moment
 AppAudio.prototype.error = function error (msg) {
-	this.titleEl.innerHTML = err || `bad source`;
+	this.inputEl.value = err || `bad source`;
 	this.infoEl.setAttribute('title', this.titleEl.innerHTML);
 	this.infoIcon.innerHTML = this.icons.error;
 
@@ -320,19 +392,10 @@ AppAudio.prototype.error = function error (msg) {
 }
 
 //Display message
-AppAudio.prototype.info = function info () {
-	this.titleEl.innerHTML = msg || `loading`;
-	this.infoIcon.innerHTML = icon || this.icons.loading;
-	this.infoEl.setAttribute('title', this.titleEl.innerHTML);
-
-	this.sourceEl.setAttribute('hidden', true);
-	this.infoEl.removeAttribute('hidden');
-
-	var isSource = !!this.source;
-
-	// to && setTimeout(() => {
-	// 	this.error('It takes too long to load. Try again later');
-	// }, to);
+AppAudio.prototype.info = function info (msg, icon) {
+	this.inputEl.value = msg;
+	this.iconEl.innerHTML = icon || this.icons.loading;
+	this.inputEl.title = this.inputEl.value;
 
 	return this;
 }

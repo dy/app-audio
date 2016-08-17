@@ -28,6 +28,10 @@
 .app-audio a {
 	color: inherit;
 }
+body.app-audio-container {
+	min-height: 100vh;
+}
+
 
 /** Components */
 .app-audio {
@@ -74,14 +78,30 @@
 	width: 100%;
 	height: 100%;
 }
+.aa-progress {
+	margin: 0;
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: .2rem;
+	background: currentColor;
+	transition: .1s linear width;
+	z-index: 999;
+}
+
 
 /** Drag and Drop */
-.app-audio-container:after {
-	content: '';
-}
-.aa-dragover:after {
-	content: '⎗';
+.aa-drop {
 	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: none;
+}
+.aa-drop:after {
+	content: '⎗';
+	position: absolute;
 	top: 0;
 	bottom: 0;
 	left: 0;
@@ -95,9 +115,9 @@
 	line-height: 20vh;
 	display: block;
 }
-.aa-dragover:before {
+.aa-drop:before {
 	content: '';
-	position: fixed;
+	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;
@@ -105,6 +125,9 @@
 	margin: 0;
 	border: .2em dashed;
 	z-index: 1;
+	display: block;
+}
+.aa-dragover .aa-drop {
 	display: block;
 }
 .aa-dragover .aa-button {
