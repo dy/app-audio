@@ -1,4 +1,4 @@
-# app-audio [![unstable](http://badges.github.io/stability-badges/dist/unstable.svg)](http://github.com/badges/stability-badges)
+# app-audio [![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
 
 Audio for your application, demo or tests.
 It will create an audio source selector able to load an audio file, url, soundcloud stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop/pasting audio, list of recently played sources, playing queue, progress bar, looping etc.
@@ -96,14 +96,14 @@ Show source menu.
 Hide source menu.
 
 </details>
-<details><summary>**`appAudio.set(data)`**</summary>
-
-Similar to push, but discards old data.
-
-</details>
 <details><summary>**`appAudio.update(options?)`**</summary>
 
 Update options, if required. Like, palette, grid type etc.
+
+</details>
+<details><summary>**`appAudio.setSource(list)`**</summary>
+
+Set source to play.
 
 </details>
 
