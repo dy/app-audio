@@ -56,9 +56,6 @@ AppAudio.prototype.url = true;
 //Enable signal input
 AppAudio.prototype.signal = true;
 
-//Enable noise input
-AppAudio.prototype.noise = true;
-
 //Show recent files list
 AppAudio.prototype.recent = true;
 
@@ -118,7 +115,8 @@ AppAudio.prototype.icons = {
 	saw: fs.readFileSync(__dirname + '/image/saw.svg', 'utf8'),
 	rectangle: fs.readFileSync(__dirname + '/image/rectangle.svg', 'utf8'),
 	triangle: fs.readFileSync(__dirname + '/image/triangle.svg', 'utf8'),
-	noise: fs.readFileSync(__dirname + '/image/noise.svg', 'utf8')
+	noise: fs.readFileSync(__dirname + '/image/noise.svg', 'utf8'),
+	whitenoise: fs.readFileSync(__dirname + '/image/whitenoise.svg', 'utf8')
 };
 
 
@@ -172,10 +170,15 @@ AppAudio.prototype.init = function init (opts) {
 		<li class="aa-item aa-soundcloud"><i class="aa-icon">${this.icons.soundcloud}</i> Soundcloud</li>
 		<li class="aa-item aa-url"><i class="aa-icon">${this.icons.url}</i> URL</li>
 		<li class="aa-item aa-mic"><i class="aa-icon">${this.icons.mic}</i> Microphone</li>
-		<li class="aa-item aa-signal"><i class="aa-icon">${this.icons.sine}</i> Signal</li>
-		<li class="aa-item aa-noise"><i class="aa-icon">${this.icons.noise}</i> Noise</li>
 		</ul>
-		<ul class="aa-items aa-recent" hidden>
+		<ul class="aa-items aa-signal" data-title="Signal">
+			<li class="aa-item aa-item-short" title="Sine"><i class="aa-icon">${this.icons.sine}</i></li>
+			<li class="aa-item aa-item-short" title="Sawtooth"><i class="aa-icon">${this.icons.saw}</i></li>
+			<li class="aa-item aa-item-short" title="Triangle"><i class="aa-icon">${this.icons.triangle}</i></li>
+			<li class="aa-item aa-item-short" title="Rectangle"><i class="aa-icon">${this.icons.rectangle}</i></li>
+			<li class="aa-item aa-item-short" title="White noise"><i class="aa-icon">${this.icons.whitenoise}</i></li>
+		</ul>
+		<ul class="aa-items aa-recent" data-title="Recent" hidden>
 		<li class="aa-item"><i class="aa-icon">${this.icons.record}</i> A.mp4</li>
 		</ul>
 	`;
@@ -283,7 +286,6 @@ AppAudio.prototype.update = function update (opts) {
 	this.file ? this.fileEl.removeAttribute('hidden') : this.fileEl.setAttribute('hidden', true);
 	this.url ? this.urlEl.removeAttribute('hidden') : this.urlEl.setAttribute('hidden', true);
 	this.signal ? this.signalEl.removeAttribute('hidden') : this.signalEl.setAttribute('hidden', true);
-	this.noise ? this.noiseEl.removeAttribute('hidden') : this.noiseEl.setAttribute('hidden', true);
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
 	this.recent ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);

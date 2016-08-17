@@ -40,7 +40,7 @@ let panel = new Settings({
 		value: true
 	},
 	sources: {
-		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'noise'],
+		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
 		change: v => {
 			audio.update({
 				file: v.indexOf('file') >= 0,
@@ -48,12 +48,9 @@ let panel = new Settings({
 				soundcloud: v.indexOf('soundcloud') >= 0,
 				mic: v.indexOf('mic') >= 0,
 				signal: v.indexOf('signal') >= 0,
-				noise: v.indexOf('noise') >= 0
+				recent: v.indexOf('recent') >= 0,
 			});
 		}
-	},
-	recent: {
-		value: true
 	},
 	color: {
 		type: 'color',

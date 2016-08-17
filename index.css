@@ -160,8 +160,8 @@ body.app-audio-container {
 	padding: 0;
 	margin: .5rem 0;
 }
-.aa-recent:before {
-	content: 'Recent';
+.aa-items:before {
+	content: attr(data-title);
 	font-weight: bold;
 	padding-left: .5rem;
 	padding-top: .5rem;
@@ -172,6 +172,9 @@ body.app-audio-container {
 	padding: 0 .5rem;
 	position: relative;
 	z-index: 1;
+}
+.aa-item-short {
+	display: inline-block;
 }
 .aa-item:hover:after {
 	content: '';
