@@ -91,6 +91,41 @@ color: 'black'
 Set source to play.
 
 </details>
+<details><summary>**`appAudio.play()`**</summary>
+
+Play current source.
+
+</details>
+<details><summary>**`appAudio.pause()`**</summary>
+
+Pause current source, for mic mode will mute output.
+
+</details>
+<details><summary>**`appAudio.reset()`**</summary>
+
+Stop playing and reset current source.
+
+</details>
+<details><summary>**`appAudio.on(event, callback)`**</summary>
+
+Bind event callback. Available events:
+
+```js
+//called whenever new source is set, like mic, file, signal etc.
+//source audioNode is passed as a first argument, so do connection routine here
+appAudio.on('source', (audioNode) => {});
+
+//called whenever user pressed play
+appAudio.on('play', (audioNode) => {});
+
+//called whenever user pressed pause
+appAudio.on('pause', (audioNode) => {});
+
+//called whenever user invoked reset
+appAudio.on('reset', () => {});
+```
+
+</details>
 <details><summary>**`appAudio.show(data)`**</summary>
 
 Show source menu.

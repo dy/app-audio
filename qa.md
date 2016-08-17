@@ -1,3 +1,8 @@
+# Q: should we autoconnect audioNode to destination?
+- web-audio-player does not
++ less hassle for user
++ ready connection allows for additional connections
+
 # Q: what is good UI for audio input?
 * There is notning new in examples by quick search
 1. start-app case: three choices resolving input, mic or source

@@ -122,9 +122,15 @@ AppAudio.prototype.icons = {
 
 //do init routine
 AppAudio.prototype.init = function init (opts) {
+	extend(this, opts);
+
 	//queue
 	this.queue = [];
 	this.current = null;
+
+	//audio
+	this.gainNode = this.context.createGain();
+	this.gainNode.connect(this.context.destination);
 
 
 	//UI
@@ -140,15 +146,16 @@ AppAudio.prototype.init = function init (opts) {
 	//create layout
 	this.element.innerHTML = `
 		<label for="aa-dropdown-toggle" class="aa-content">
-			<i class="aa-icon">${this.icons.loading}</i>
-			<input class="aa-input" value="Select source..." readonly/>
+			<i class="aa-icon">${this.icons.eject}</i>
+			<input class="aa-input" value="Select source" readonly/>
 		</label>
-		<a href="#playback" class="aa-button"><i class="aa-icon">${this.icons.play}</i></a>
+		<a href="#playback" class="aa-button"><i class="aa-icon"></i></a>
 	`;
 	this.iconEl = this.element.querySelector('.aa-icon');
 	this.contentEl = this.element.querySelector('.aa-content');
 	this.inputEl = this.element.querySelector('.aa-input');
 	this.buttonEl = this.element.querySelector('.aa-button');
+	this.playEl = this.buttonEl.querySelector('.aa-icon');
 
 	this.contentEl.addEventListener('click', () => {
 		if (this.dropdownEl.hasAttribute('hidden')) {
@@ -191,10 +198,62 @@ AppAudio.prototype.init = function init (opts) {
 	this.recentEl = this.dropdownEl.querySelector('.aa-recent');
 	this.element.appendChild(this.dropdownEl);
 
+	//init playpayse
+	this.playEl.addEventListener('click', e => {
+		e.preventDefault();
+
+		if (this.isPaused) {
+			this.play();
+		}
+		else {
+			this.pause();
+		}
+	});
+
 	//init file
 	this.fileInputEl = this.dropdownEl.querySelector('.aa-file-input');
 	this.fileInputEl.addEventListener('change', e => {
 		this.setSource(this.fileInputEl.files);
+	});
+
+	//init mic
+	this.micEl.addEventListener('click', (e) => {
+		let that = this;
+
+		e.preventDefault();
+
+		this.reset();
+
+		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			navigator.mediaDevices.getUserMedia({audio: true, video: false})
+			.then(enableMic).catch((e) => this.error(e));
+		}
+		else {
+			try {
+				navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia);
+				navigator.getUserMedia({audio: true, video: false}, enableMic, (e) => this.error(e));
+			} catch (e) {
+				this.error(e);
+			}
+		}
+
+		function enableMic(stream) {
+			that.info('Microphone', that.icons.mic);
+
+			//an alternative way to start media stream
+			//does not work in chrome, so we just pass url to callback
+			let streamUrl = URL.createObjectURL(stream);
+			// that.audio.src = streamUrl;
+
+			//create media stream source node
+			if (!that.micNode) {
+				that.micNode = that.context.createMediaStreamSource(stream);
+				that.micNode.connect(that.gainNode);
+			}
+			that.autoplay && that.play();
+
+			that.emit('source', that.micNode, streamUrl);
+		}
 	});
 
 	//create progress
@@ -266,16 +325,6 @@ AppAudio.prototype.init = function init (opts) {
 	this.update(opts);
 };
 
-//Save/restore state technical methods
-AppAudio.prototype.saveState = function () {
-	this.lastTitle = this.inputEl.value;
-	this.lastIcon = this.iconEl.innerHTML;
-}
-AppAudio.prototype.restoreState = function () {
-	this.info(this.lastTitle, this.lastIcon);
-}
-
-
 //keep app state updated
 AppAudio.prototype.update = function update (opts) {
 	extend(this, opts);
@@ -294,26 +343,9 @@ AppAudio.prototype.update = function update (opts) {
 	this.element.style.color = this.color;
 	this.progressEl.style.color = this.color;
 	this.dropEl.style.color = this.color;
+
+	return this;
 };
-
-
-//Show/hide menu
-AppAudio.prototype.show = function (src) {
-	this.dropdownEl.removeAttribute('hidden');
-	this.contentEl.classList.add('aa-active');
-
-	let that = this;
-	setTimeout(() => {
-		document.addEventListener('click', function _(e) {
-			that.hide();
-			document.removeEventListener('click', _);
-		});
-	});
-}
-AppAudio.prototype.hide = function (src) {
-	this.contentEl.classList.remove('aa-active');
-	this.dropdownEl.setAttribute('hidden', true);
-}
 
 
 //set current source to play
@@ -367,32 +399,106 @@ AppAudio.prototype.setSource = function (src) {
 	}
 
 	//FIXME: url
+
+	return this;
 };
 
+//Play/pause
+AppAudio.prototype.play = function () {
+	this.isPaused = false;
+	this.playEl.innerHTML = this.icons.pause;
+
+	this.play && this.playEl.removeAttribute('hidden');
+
+	if (this.micNode) {
+		this.gainNode.gain.value = 1;
+	}
+
+	this.emit('play', this.micNode);
+
+	return this;
+};
+AppAudio.prototype.pause = function () {
+	this.isPaused = true;
+	this.playEl.innerHTML = this.icons.play;
+
+	this.play && this.playEl.removeAttribute('hidden');
+
+	if (this.micNode) {
+		this.gainNode.gain.value = 0;
+	}
+
+	this.emit('pause', this.micNode);
+
+	return this;
+};
+
+//Disconnect all nodes, pause, reset source
+AppAudio.prototype.reset = function () {
+	this.isPaused = true;
+	this.playEl.innerHTML = this.icons.play;
+	this.playEl.setAttribute('hidden', true);
+	this.info('Select source', this.icons.eject);
+
+	if (this.micNode) {
+		this.micNode.disconnect();
+		this.micNode = null;
+	}
+
+	this.emit('reset', this.micNode);
+
+	return this;
+};
+
+//Show/hide menu
+AppAudio.prototype.show = function (src) {
+	this.dropdownEl.removeAttribute('hidden');
+	this.contentEl.classList.add('aa-active');
+
+	let that = this;
+	setTimeout(() => {
+		document.addEventListener('click', function _(e) {
+			that.hide();
+			document.removeEventListener('click', _);
+		});
+	});
+
+	return this;
+};
+AppAudio.prototype.hide = function (src) {
+	this.contentEl.classList.remove('aa-active');
+	this.dropdownEl.setAttribute('hidden', true);
+
+	return this;
+};
+
+//Save/restore state technical methods
+AppAudio.prototype.saveState = function () {
+	this.lastTitle = this.inputEl.value;
+	this.lastIcon = this.iconEl.innerHTML;
+
+	return this;
+};
+AppAudio.prototype.restoreState = function () {
+	this.info(this.lastTitle, this.lastIcon);
+
+	return this;
+};
+
+//Duration of error message
+AppAudio.prototype.errorDuration = 1600;
 
 //Display error for a moment
 AppAudio.prototype.error = function error (msg) {
-	this.inputEl.value = err || `bad source`;
-	this.infoEl.setAttribute('title', this.titleEl.innerHTML);
-	this.infoIcon.innerHTML = this.icons.error;
-
-	this.sourceEl.setAttribute('hidden', true);
-	this.infoEl.removeAttribute('hidden');
-
-	var isSource = !!this.source;
+	this.saveState();
+	this.info(msg, this.icons.error);
 
 	setTimeout(() => {
-		this.sourceEl.removeAttribute('hidden');
-		this.infoEl.setAttribute('hidden', true);
-
-		if (!isSource) this.showInput();
-
-		cb && cb('Bad url');
-	}, 1600);
+		this.restoreState();
+	}, this.errorDuration);
 
 	return this;
-}
-
+};
 //Display message
 AppAudio.prototype.info = function info (msg, icon) {
 	this.inputEl.value = msg;
@@ -400,4 +506,4 @@ AppAudio.prototype.info = function info (msg, icon) {
 	this.inputEl.title = this.inputEl.value;
 
 	return this;
-}
+};

@@ -56,10 +56,12 @@ body.app-audio-container {
 	margin: 0;
 	outline: none;
 	font-size: 1rem;
+	font-family: inherit;
 	display: inline;
 	line-height: 2;
 	color: inherit;
 	pointer-events: none;
+	font-weight: bold;
 }
 .aa-content {
 	height: 2rem;
@@ -77,6 +79,10 @@ body.app-audio-container {
 	position: absolute;
 	width: 100%;
 	height: 100%;
+}
+.aa-button {
+	line-height: 2rem;
+	display: inline-block;
 }
 .aa-progress {
 	margin: 0;
@@ -138,7 +144,7 @@ body.app-audio-container {
 /** Dropdown */
 .aa-dropdown {
 	position: absolute;
-	font-family: sans-serif;
+	font-family: inherit;
 	line-height: 2rem;
 	left: 0;
 	top: 100%;
@@ -164,7 +170,6 @@ body.app-audio-container {
 	content: attr(data-title);
 	font-weight: bold;
 	padding-left: .5rem;
-	padding-top: .5rem;
 	display: block;
 }
 .aa-item {
