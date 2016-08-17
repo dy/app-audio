@@ -2,6 +2,9 @@
 .app-audio [hidden] {
 	display: none!important;
 }
+.app-audio * {
+	box-sizing: border-box;
+}
 .app-audio input[type=file],
 .app-audio input[type=file]::-webkit-file-upload-button {
 	cursor: pointer;
@@ -26,7 +29,6 @@
 	color: inherit;
 }
 
-
 /** Components */
 .app-audio {
 	position: absolute;
@@ -34,6 +36,9 @@
 	left: 0;
 	line-height: 2rem;
 	font-family: sans-serif;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
 	padding: 0 .5rem;
 }
 
@@ -44,15 +49,31 @@
 	border: 0;
 	border-radius: 0;
 	background: none;
-	padding: 0;
 	margin: 0;
 	outline: none;
 	font-size: 1rem;
 	display: inline;
 	line-height: 2;
 	color: inherit;
+	pointer-events: none;
 }
-
+.aa-content {
+	height: 2rem;
+	display: inline-block;
+	line-height: 2rem;
+	cursor: pointer;
+}
+.aa-active:after {
+	content: '';
+	background: currentColor;
+	z-index: 0;
+	opacity: .1;
+	top: 0;
+	left: 0;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
 
 /** Drag and Drop */
 .app-audio-container:after {
@@ -94,19 +115,40 @@
 /** Dropdown */
 .aa-dropdown {
 	position: absolute;
-	box-shadow: 0 0 1px rgba(128,128,128,.5);
-	list-style: none;
 	font-family: sans-serif;
 	line-height: 2rem;
-	padding: 0;
+	left: 0;
 	top: 100%;
-	margin: 0;
-	margin-left: -.5rem;
+	width: 100%;
+}
+.aa-dropdown:after {
+	content: '';
+	background: currentColor;
+	z-index: 0;
+	opacity: .1;
+	top: 0;
+	left: 0;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+.aa-items {
+	list-style: none;
+	padding: 0;
+	margin: .5rem 0;
+}
+.aa-recent:before {
+	content: 'Recent';
+	font-weight: bold;
+	padding-left: .5rem;
+	padding-top: .5rem;
+	display: block;
 }
 .aa-item {
 	cursor: pointer;
 	padding: 0 .5rem;
 	position: relative;
+	z-index: 1;
 }
 .aa-item:hover:after {
 	content: '';
@@ -118,4 +160,13 @@
 	background: currentColor;
 	opacity: .25;
 }
-
+.aa-file-input {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	cursor: pointer;
+	opacity: 0;
+	z-index: 1;
+}

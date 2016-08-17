@@ -1,7 +1,7 @@
 # app-audio [![unstable](http://badges.github.io/stability-badges/dist/unstable.svg)](http://github.com/badges/stability-badges)
 
 Audio for your application, demo or tests.
-It will create an audio source selector for an audio file, url, soundcloud stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop, pasting audio, list of recently opened sources, progress bar, looping tracks etc.
+It will create an audio source selector able to load an audio file, url, soundcloud stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop/pasting audio, list of recently played sources, playing queue, progress bar, looping etc.
 
 [![app-audio](https://raw.githubusercontent.com/audio-lab/app-audio/gh-pages/preview.png "app-audio")](http://audio-lab.github.io/app-audio/)
 
@@ -11,55 +11,103 @@ It will create an audio source selector for an audio file, url, soundcloud strea
 [![npm install app-audio](https://nodei.co/npm/app-audio.png?mini=true)](https://npmjs.org/package/app-audio/)
 
 ```js
-const SoundInput = require('app-audio');
+const createAudio = require('app-audio');
 
-let wf = SoundInput({
-	source: ''
+let audioSrc = createAudio({
+	source: './my-audio.mp3'
+}).on('ready', () => {
+
 });
+
 ```
 
 <!-- [**`See in action`**](TODO requirebin) -->
 
 ## API
 
-<details><summary>**`const SoundInput = require('app-audio');`**</summary>
+<details><summary>**`const createAudio = require('app-audio');`**</summary>
 
-Get waveform component class. `require('app-audio/2d')` for canvas-2d version.
+Get app audio component class. It can serve both as a class or constructor function.
 
 </details>
-<details><summary>**`let soundInput = new SoundInput(options);`**</summary>
+<details><summary>**`let appAudio = createAudio(options);`**</summary>
 
-Create sound input component based off options:
+Create audio source instance based off options:
 
 ```js
-//container to place waveform element
+//container to place UI
 container: document.body,
 
+
+//Observe paste event
+paste: true,
+
+//Allow dropping files to browser
 dragAndDrop: true,
 
+//Show play/payse buttons
+play: true,
 
+//Enable file select
+file: true,
+
+//Enable url input
+url: true,
+
+//Enable signal input
+signal: true,
+
+//Enable noise input
+noise: true,
+
+//Enable mic input
+mic: true,
+
+//Enable soundcloud input
+soundcloud: true,
+
+//Autostart play
+autoplay: true,
+
+//Repeat track[s] list after end
+loop: true,
+
+//Show progress indicator
+progress: true,
+
+//Save/load last track
+save: true,
+
+//Display icons
+icon: true,
+
+//Default color
+color: 'black'
 ```
 
 </details>
-<details><summary>**`waveform.push(data)`**</summary>
+<details><summary>**`appAudio.show(data)`**</summary>
 
-Add new data for the waveform. Data is whether single sample or array/float array with float values from `0..1` range. The visible slice will be automatically rerendered in next frame. So safely call push as many times as you need.
+Show source menu.
 
 </details>
-<details><summary>**`waveform.set(data)`**</summary>
+<details><summary>**`appAudio.hide(data)`**</summary>
+
+Hide source menu.
+
+</details>
+<details><summary>**`appAudio.set(data)`**</summary>
 
 Similar to push, but discards old data.
 
 </details>
-<details><summary>**`waveform.update(options?)`**</summary>
+<details><summary>**`appAudio.update(options?)`**</summary>
 
 Update options, if required. Like, palette, grid type etc.
 
 </details>
 
 ## Credits
-
-> [Drawing waveforms](http://www.supermegaultragroovy.com/2009/10/06/drawing-waveforms/) — some insights on the way to draw waveforms.<br/>
 
 ## Related
 

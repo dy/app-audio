@@ -1,7 +1,7 @@
 const Audio = require('./');
 const css = require('insert-styles');
 const palettes = require('nice-color-palettes');
-const Settings = require('../settings-panel');
+const Settings = require('settings-panel');
 
 
 // prepare mobile
@@ -32,8 +32,13 @@ let audio = new Audio({
 
 //init settings panel
 let panel = new Settings({
+	play: {
+		value: true
+	},
+	icon: {
+		value: true
+	},
 	sources: {
-		options: ['file', 'url', 'soundcloud', 'mic', 'signal', 'noise'],
 		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'noise'],
 		change: v => {
 			audio.update({
@@ -46,6 +51,9 @@ let panel = new Settings({
 			});
 		}
 	},
+	recent: {
+		value: true
+	},
 	color: {
 		type: 'color',
 		value: 'white',
@@ -55,7 +63,10 @@ let panel = new Settings({
 	}
 }, {
 	title: `<a href="https://github.com/dfcreative/app-audio" title="app-audio in github">app-audio <span style="position: absolute; margin-left: .15em; margin-top: -.25em; width: .75em; height: .75em;">${ghIcon}</span></a>`,
-	theme: require('../settings-panel/theme/dragon'),
+	theme: require('settings-panel/theme/dragon'),
 	style: 'width: 240px; position: absolute; top: 0; right: 0;',
 	palette: ['#1C0515', 'white']
+});
+panel.element.addEventListener('click', (e) => {
+	e.stopPropagation()
 });

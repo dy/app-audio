@@ -33,6 +33,8 @@ function AppAudio (opts) {
 	if (!(this instanceof AppAudio)) return new AppAudio(opts);
 
 	this.init(opts);
+
+	this.setSource(this.source);
 }
 
 
@@ -56,6 +58,9 @@ AppAudio.prototype.signal = true;
 
 //Enable noise input
 AppAudio.prototype.noise = true;
+
+//Show recent files list
+AppAudio.prototype.recent = true;
 
 //Enable mic input
 AppAudio.prototype.mic = !!(navigator.mediaDevices || navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia);
@@ -119,6 +124,12 @@ AppAudio.prototype.icons = {
 
 //do init routine
 AppAudio.prototype.init = function init (opts) {
+	//queue
+	this.queue = [];
+	this.current = null;
+
+
+	//UI
 	//ensure container
 	if (!this.container) this.container = document.body || document.documentElement;
 	this.container.classList.add('app-audio-container');
@@ -130,8 +141,8 @@ AppAudio.prototype.init = function init (opts) {
 
 	//create layout
 	this.element.innerHTML = `
-		<i class="aa-icon">${this.icons.loading}</i>
-		<label for="source" class="aa-content">
+		<label for="aa-dropdown-toggle" class="aa-content">
+			<i class="aa-icon">${this.icons.loading}</i>
 			<input class="aa-input" value="Select source..." readonly/>
 		</label>
 		<a href="#playback" class="aa-button"><i class="aa-icon">${this.icons.play}</i></a>
@@ -141,16 +152,32 @@ AppAudio.prototype.init = function init (opts) {
 	this.inputEl = this.element.querySelector('.aa-input');
 	this.buttonEl = this.element.querySelector('.aa-button');
 
+	this.contentEl.addEventListener('click', () => {
+		if (this.dropdownEl.hasAttribute('hidden')) {
+			this.show();
+		}
+		else {
+			this.hide();
+		}
+	});
+
 	//create dropdown
-	this.dropdownEl = document.createElement('ul');
+	this.dropdownEl = document.createElement('div');
 	this.dropdownEl.className = 'aa-dropdown';
+	this.dropdownEl.setAttribute('hidden', true);
 	this.dropdownEl.innerHTML = `
-		<li class="aa-item aa-file"><i class="aa-icon">${this.icons.open}</i> File</li>
+		<ul class="aa-items">
+		<li class="aa-item aa-file"><i class="aa-icon">${this.icons.open}</i> File
+		<input class="aa-file-input" type="file" multiple/></li>
 		<li class="aa-item aa-soundcloud"><i class="aa-icon">${this.icons.soundcloud}</i> Soundcloud</li>
-		<li class="aa-item aa-url"><i class="aa-icon">${this.icons.url}</i> Url</li>
+		<li class="aa-item aa-url"><i class="aa-icon">${this.icons.url}</i> URL</li>
 		<li class="aa-item aa-mic"><i class="aa-icon">${this.icons.mic}</i> Microphone</li>
 		<li class="aa-item aa-signal"><i class="aa-icon">${this.icons.sine}</i> Signal</li>
 		<li class="aa-item aa-noise"><i class="aa-icon">${this.icons.noise}</i> Noise</li>
+		</ul>
+		<ul class="aa-items aa-recent" hidden>
+		<li class="aa-item"><i class="aa-icon">${this.icons.record}</i> A.mp4</li>
+		</ul>
 	`;
 	this.fileEl = this.dropdownEl.querySelector('.aa-file');
 	this.urlEl = this.dropdownEl.querySelector('.aa-url');
@@ -158,7 +185,14 @@ AppAudio.prototype.init = function init (opts) {
 	this.micEl = this.dropdownEl.querySelector('.aa-mic');
 	this.noiseEl = this.dropdownEl.querySelector('.aa-noise');
 	this.signalEl = this.dropdownEl.querySelector('.aa-signal');
+	this.recentEl = this.dropdownEl.querySelector('.aa-recent');
 	this.element.appendChild(this.dropdownEl);
+
+	//init file
+	this.fileInputEl = this.dropdownEl.querySelector('.aa-file-input');
+	this.fileInputEl.addEventListener('change', e => {
+		this.setSource(this.fileInputEl.files);
+	});
 
 	//create progress
 	this.progressEl = document.createElement('ul');
@@ -182,7 +216,123 @@ AppAudio.prototype.update = function update (opts) {
 	this.noise ? this.noiseEl.removeAttribute('hidden') : this.noiseEl.setAttribute('hidden', true);
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
+	this.recent ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
 
 	//apply color
 	this.element.style.color = this.color;
 };
+
+
+//Show/hide menu
+AppAudio.prototype.show = function (src) {
+	this.dropdownEl.removeAttribute('hidden');
+	this.contentEl.classList.add('aa-active');
+
+	let that = this;
+	setTimeout(() => {
+		document.addEventListener('click', function _(e) {
+			that.hide();
+			document.removeEventListener('click', _);
+		});
+	});
+}
+AppAudio.prototype.hide = function (src) {
+	this.contentEl.classList.remove('aa-active');
+	this.dropdownEl.setAttribute('hidden', true);
+}
+
+
+//set current source to play
+AppAudio.prototype.setSource = function (src) {
+	//undefined source does not change current state
+	if (!src) return this;
+
+	//list of sources to enqueue
+	let list = [];
+
+	//list of files enqueues all audio files to play
+	if (src instanceof FileList) {
+		let list = src;
+
+		for (var i = 0; i < list.length; i++) {
+			if (/audio/.test(list[i].type)) {
+				list.push(list[i]);
+			}
+		}
+
+		if (!list.length) {
+			src.length === 1 ? this.error('Not an audio') : this.error('No audio within selected files');
+			return this;
+		}
+	}
+
+	//single file instance
+	if (src instanceof File) {
+		let url = URL.createObjectURL(src);
+
+		this.info(src.name, this.icons.record);
+		this.playQueue = [url];
+
+		this.reset();
+		this.player = new Player(url, {
+			context: this.context,
+			loop: this.loop,
+			buffer: isMobile,
+			crossOrigin: 'Anonymous'
+		})
+		.on('load', e => {
+			this.play && this.audioEl.removeAttribute('hidden');
+			this.emit('source', this.player.node, url);
+			this.autoplay && this.play();
+		})
+		.on('error', e => this.error(e))
+		.on('ended', e => {
+			this.next();
+		});
+
+	}
+
+	//FIXME: url
+};
+
+
+//Display error for a moment
+AppAudio.prototype.error = function error (msg) {
+	this.titleEl.innerHTML = err || `bad source`;
+	this.infoEl.setAttribute('title', this.titleEl.innerHTML);
+	this.infoIcon.innerHTML = this.icons.error;
+
+	this.sourceEl.setAttribute('hidden', true);
+	this.infoEl.removeAttribute('hidden');
+
+	var isSource = !!this.source;
+
+	setTimeout(() => {
+		this.sourceEl.removeAttribute('hidden');
+		this.infoEl.setAttribute('hidden', true);
+
+		if (!isSource) this.showInput();
+
+		cb && cb('Bad url');
+	}, 1600);
+
+	return this;
+}
+
+//Display message
+AppAudio.prototype.info = function info () {
+	this.titleEl.innerHTML = msg || `loading`;
+	this.infoIcon.innerHTML = icon || this.icons.loading;
+	this.infoEl.setAttribute('title', this.titleEl.innerHTML);
+
+	this.sourceEl.setAttribute('hidden', true);
+	this.infoEl.removeAttribute('hidden');
+
+	var isSource = !!this.source;
+
+	// to && setTimeout(() => {
+	// 	this.error('It takes too long to load. Try again later');
+	// }, to);
+
+	return this;
+}
