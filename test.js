@@ -30,13 +30,15 @@ let ghIcon = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink=
 
 //create audio
 let audio = new Audio({
-	color: 'white'
+	color: 'white',
+	// loop: false
 });
 
 //init settings panel
 let panel = new Settings({
 	settings: {
-		value: ['play', 'autoplay', 'loop', 'icon'],
+		options: ['play', 'autoplay', 'loop', 'icon'],
+		value: ['play', 'autoplay', 'loop', 'icon'].filter(name => audio[name]),
 		change: v => {
 			audio.update({
 				loop: v.indexOf('loop') >= 0
@@ -58,7 +60,7 @@ let panel = new Settings({
 	},
 	color: {
 		type: 'color',
-		value: 'white',
+		value: audio.color,
 		change: v => {
 			audio.update({color: v});
 		}
