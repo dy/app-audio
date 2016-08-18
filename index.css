@@ -75,7 +75,7 @@ body.app-audio-container {
 	opacity: .95;
 }
 .aa-focus .aa-input {
-	box-shadow: 0 1px 6px 1px currentColor;
+	/*box-shadow: 0 1px 6px 1px currentColor;*/
 }
 .aa-error:before {
 	opacity: 0;

@@ -185,9 +185,7 @@ AppAudio.prototype.init = function init (opts) {
 			<li class="aa-item aa-item-short" title="Rectangle"><i class="aa-icon">${this.icons.rectangle}</i></li>
 			<li class="aa-item aa-item-short" title="White noise"><i class="aa-icon">${this.icons.whitenoise}</i></li>
 		</ul>
-		<ul class="aa-items aa-recent" data-title="Recent" hidden>
-		<li class="aa-item"><i class="aa-icon">${this.icons.record}</i> A.mp4</li>
-		</ul>
+		<ul class="aa-items aa-recent" data-title="Recent" hidden></ul>
 	`;
 	this.fileEl = this.dropdownEl.querySelector('.aa-file');
 	this.urlEl = this.dropdownEl.querySelector('.aa-url');
@@ -362,7 +360,12 @@ AppAudio.prototype.init = function init (opts) {
 
 	this.container.appendChild(this.testEl);
 
+	//load last source
+	if (this.save) this.loadSources();
+
 	this.reset();
+
+	return this;
 };
 
 //keep app state updated
@@ -377,7 +380,7 @@ AppAudio.prototype.update = function update (opts) {
 	this.signal ? this.signalEl.removeAttribute('hidden') : this.signalEl.setAttribute('hidden', true);
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
-	this.recent ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
+	this.recent && this.recentSources.length ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
 
 	//apply color
 	this.element.style.color = this.color;
@@ -386,6 +389,16 @@ AppAudio.prototype.update = function update (opts) {
 
 	//update width
 	this.inputEl.style.width = getComputedStyle(this.testEl).width;
+
+	//update recent list
+	this.recentEl.innerHTML = '';
+	if (this.recent) {
+		let html = ``;
+		this.recentSources.forEach((src) => {
+			html += `<li class="aa-item aa-recent-item">${src}</li>`
+		});
+		this.recentEl.innerHTML = html;
+	}
 
 	return this;
 };
@@ -495,7 +508,9 @@ AppAudio.prototype.setSource = function (src) {
 
 			this.player = player;
 
-			this.source = src;
+			this.currentSource = src;
+			this.save && this.saveSources(this.currentSource);
+			this.update();
 
 			this.info(src, this.icons.url);
 
@@ -507,11 +522,42 @@ AppAudio.prototype.setSource = function (src) {
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
+		}).on('end', () => {
+			this.pause()
 		});
 	}
 
 	return this;
 };
+
+//Save/load recent tracks to list
+AppAudio.prototype.storageKey = 'app-audio';
+AppAudio.prototype.storage = sessionStorage || localStorage;
+AppAudio.prototype.saveSources = function (src) {
+	if (!this.storage) return this;
+
+	if (src && this.recentSources.indexOf(src) < 0) this.recentSources.push(src);
+
+	this.storage.setItem(this.storageKey, JSON.stringify({
+		recent: this.recentSources,
+		current: this.currentSource
+	}));
+
+	return this;
+}
+AppAudio.prototype.loadSources = function () {
+	if (!this.storage) return this;
+
+	let obj = this.storage.getItem(this.storageKey);
+	if (!obj) return this;
+
+	let {recent, current} = JSON.parse(obj);
+
+	this.recentSources = recent;
+	this.setSource(current);
+
+	return this;
+}
 
 //Play/pause
 AppAudio.prototype.play = function () {

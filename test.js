@@ -36,7 +36,12 @@ let audio = new Audio({
 //init settings panel
 let panel = new Settings({
 	settings: {
-		value: ['play', 'autoplay', 'loop', 'icon']
+		value: ['play', 'autoplay', 'loop', 'icon'],
+		change: v => {
+			audio.update({
+				loop: v.indexOf('loop') >= 0
+			});
+		}
 	},
 	sources: {
 		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
