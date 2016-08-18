@@ -125,8 +125,9 @@ AppAudio.prototype.init = function init (opts) {
 	extend(this, opts);
 
 	//queue
-	this.queue = [];
-	this.current = null;
+	this.currentSource = null;
+	this.nextSources = [];
+	this.recentSources = [];
 
 	//audio
 	this.gainNode = this.context.createGain();
@@ -209,6 +210,45 @@ AppAudio.prototype.init = function init (opts) {
 		}
 	});
 
+	//init input
+	this.inputEl.addEventListener('input', e => {
+		this.testEl.innerHTML = this.inputEl.value;
+		this.inputEl.style.width = getComputedStyle(this.testEl).width;
+	});
+
+	//init url
+	this.urlEl.addEventListener('click', e => {
+		this.inputEl.focus();
+	});
+	this.inputEl.addEventListener('focus', e => {
+		this.saveState();
+		this.inputEl.removeAttribute('readonly');
+		this.contentEl.classList.add('aa-focus');
+		this.playEl.setAttribute('hidden', true);
+		this.info('https://', this.icons.url);
+		this.inputEl.select();
+	});
+	this.inputEl.addEventListener('keypress', e => {
+		if (e.which === 13) {
+			this.inputEl.blur();
+			//FIXME: do we need this call? when? when no change happened?
+			// this.inputEl.dispatchEvent(new Event('change'));
+		}
+	});
+	this.inputEl.addEventListener('blur', e => {
+		this.inputEl.setAttribute('readonly', true);
+		this.contentEl.classList.remove('aa-focus');
+		this.restoreState();
+	});
+	this.inputEl.addEventListener('change', (e) => {
+		e.preventDefault();
+		let value = this.inputEl.value;
+		//to be called after blur
+		setTimeout(() => {
+			this.setSource(value);
+		});
+	});
+
 	//init file
 	this.fileInputEl = this.dropdownEl.querySelector('.aa-file-input');
 	this.fileInputEl.addEventListener('change', e => {
@@ -225,33 +265,15 @@ AppAudio.prototype.init = function init (opts) {
 
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({audio: true, video: false})
-			.then(enableMic).catch((e) => this.error(e));
+			.then(stream => this.setSource(stream)).catch((e) => this.error(e));
 		}
 		else {
 			try {
 				navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia);
-				navigator.getUserMedia({audio: true, video: false}, enableMic, (e) => this.error(e));
+				navigator.getUserMedia({audio: true, video: false}, stream => this.setSource(stream), (e) => this.error(e));
 			} catch (e) {
 				this.error(e);
 			}
-		}
-
-		function enableMic(stream) {
-			that.info('Microphone', that.icons.mic);
-
-			//an alternative way to start media stream
-			//does not work in chrome, so we just pass url to callback
-			let streamUrl = URL.createObjectURL(stream);
-			// that.audio.src = streamUrl;
-
-			//create media stream source node
-			if (!that.micNode) {
-				that.micNode = that.context.createMediaStreamSource(stream);
-				that.micNode.connect(that.gainNode);
-			}
-			that.autoplay && that.play();
-
-			that.emit('source', that.micNode, streamUrl);
 		}
 	});
 
@@ -305,7 +327,6 @@ AppAudio.prototype.init = function init (opts) {
 			let items = e.dataTransfer.items;
 
 			that.saveState();
-			console.log(items.length)
 			that.info(items.length < 2 ? `Drop audio file` : `Drop audio files`, that.icons.record);
 		}
 		function dragleave (e) {
@@ -333,6 +354,8 @@ AppAudio.prototype.init = function init (opts) {
 	this.testEl.style.padding = style.padding;
 	this.testEl.style.margin = style.margin;
 	this.testEl.style.border = style.border;
+
+	this.testEl.style.whiteSpace = 'pre';
 	this.testEl.style.position = 'fixed';
 	this.testEl.style.top = '-1000px';
 	this.testEl.style.left = '-1000px';
@@ -373,12 +396,37 @@ AppAudio.prototype.setSource = function (src) {
 	//undefined source does not change current state
 	if (!src) return this;
 
-	//list of sources to enqueue
-	let list = [];
+	//ignore not changed source
+	if (src === this.currentSource) return this;
+
+	//detect mic source, duck typing
+	if (src.active != null && src.id && src.addTrack) {
+		//ignore active mic already
+		if (this.micNode) return this;
+
+		this.reset();
+
+		this.info('Microphone', this.icons.mic);
+
+		//an alternative way to start media stream
+		//does not work in chrome, so we just pass url to callback
+		this.currentSource = URL.createObjectURL(src);
+		// this.audio.src = streamUrl;
+
+		//create media stream source node
+		this.micNode = this.context.createMediaStreamSource(src);
+		this.micNode.connect(this.gainNode);
+
+		this.autoplay && this.play();
+
+		this.emit('source', this.micNode, this.currentSource);
+
+		return this;
+	}
 
 	//list of files enqueues all audio files to play
 	if (src instanceof FileList) {
-		let list = src;
+		let list = [];
 
 		for (var i = 0; i < list.length; i++) {
 			if (/audio/.test(list[i].type)) {
@@ -387,9 +435,13 @@ AppAudio.prototype.setSource = function (src) {
 		}
 
 		if (!list.length) {
-			src.length === 1 ? this.error('Not an audio') : this.error('No audio within selected files');
+			src.length === 1 ? this.error('Not an audio') : this.error('No audio source');
 			return this;
 		}
+
+		this.nextSources = list;
+
+		this.autoplay && this.play();
 	}
 
 	//single file instance
@@ -403,13 +455,17 @@ AppAudio.prototype.setSource = function (src) {
 		this.player = new Player(url, {
 			context: this.context,
 			loop: this.loop,
-			buffer: isMobile,
+			// buffer: isMobile,
 			crossOrigin: 'Anonymous'
 		})
 		.on('load', e => {
 			this.play && this.audioEl.removeAttribute('hidden');
-			this.emit('source', this.player.node, url);
+
+			this.player.node.connect(this.gainNode);
+
 			this.autoplay && this.play();
+
+			this.emit('source', this.player.node, url);
 		})
 		.on('error', e => this.error(e))
 		.on('ended', e => {
@@ -418,7 +474,36 @@ AppAudio.prototype.setSource = function (src) {
 
 	}
 
-	//FIXME: url
+	//url
+	else if (typeof src === 'string') {
+		if (!isUrl(src) && src[0] != '.' && src[0] != '/') {
+			this.error('Bad URL');
+			return this;
+		}
+
+		this.info(`Loading ${src}`, this.icons.loading);
+
+		this.reset();
+
+		this.player = new Player(src, {
+			context: this.context,
+			loop: this.loop,
+			buffer: isMobile, //FIXME: this can be always false here i guess
+			crossOrigin: 'Anonymous'
+		}).on('load', () => {
+			this.source = src;
+
+			this.info(src, this.icons.url);
+
+			this.player.node.connect(this.gainNode);
+
+			this.autoplay && this.play();
+
+			this.emit('source', this.player.node, src);
+		}).on('error', (err) => {
+			this.error(err);
+		});
+	}
 
 	return this;
 };
@@ -430,9 +515,8 @@ AppAudio.prototype.play = function () {
 
 	this.play && this.playEl.removeAttribute('hidden');
 
-	if (this.micNode) {
-		this.gainNode.gain.value = 1;
-	}
+	this.player && this.player.play();
+	this.gainNode.gain.value = 1;
 
 	this.emit('play', this.micNode);
 
@@ -442,11 +526,11 @@ AppAudio.prototype.pause = function () {
 	this.isPaused = true;
 	this.playEl.innerHTML = this.icons.play;
 
+	this.player && this.player.pause();
+
 	this.play && this.playEl.removeAttribute('hidden');
 
-	if (this.micNode) {
-		this.gainNode.gain.value = 0;
-	}
+	this.gainNode.gain.value = 0;
 
 	this.emit('pause', this.micNode);
 
@@ -455,11 +539,22 @@ AppAudio.prototype.pause = function () {
 
 //Disconnect all nodes, pause, reset source
 AppAudio.prototype.reset = function () {
-	this.isPaused = true;
+	//to avoid mixing multiple sources
+	this.pause();
+
+	//reset sources list
+	this.nextSources = [];
+	this.currentSource = null;
+
+	//reset UI
 	this.playEl.innerHTML = this.icons.play;
 	this.playEl.setAttribute('hidden', true);
 	this.info('Select source', this.icons.eject);
 
+	//disconnect audio
+	if (this.player) {
+		this.player = null;
+	}
 	if (this.micNode) {
 		this.micNode.disconnect();
 		this.micNode = null;
@@ -496,11 +591,15 @@ AppAudio.prototype.hide = function (src) {
 AppAudio.prototype.saveState = function () {
 	this.lastTitle = this.inputEl.value;
 	this.lastIcon = this.iconEl.innerHTML;
+	this.lastPlayVisibility = this.playEl.hasAttribute('hidden');
 
 	return this;
 };
-AppAudio.prototype.restoreState = function () {
-	this.info(this.lastTitle, this.lastIcon);
+AppAudio.prototype.restoreState = function (state) {
+	state = state || this;
+	this.info(state.lastTitle, state.lastIcon);
+	if (state.lastPlayVisibility) this.playEl.setAttribute('hidden', true);
+	else this.playEl.removeAttribute('hidden');
 
 	return this;
 };
@@ -512,8 +611,14 @@ AppAudio.prototype.errorDuration = 1600;
 AppAudio.prototype.error = function error (msg) {
 	this.saveState();
 	this.info(msg, this.icons.error);
+	this.playEl.setAttribute('hidden', true);
+	this.contentEl.classList.add('aa-error');
+
+	//FIXME: emitter shits the bed here
+	// this.emit('error', msg);
 
 	setTimeout(() => {
+		this.contentEl.classList.remove('aa-error');
 		this.restoreState();
 	}, this.errorDuration);
 

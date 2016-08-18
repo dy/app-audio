@@ -1,7 +1,7 @@
 const Audio = require('./');
 const css = require('insert-styles');
 const palettes = require('nice-color-palettes');
-const Settings = require('../settings-panel');
+const Settings = require('settings-panel');
 
 
 // prepare mobile
@@ -59,9 +59,9 @@ let panel = new Settings({
 		}
 	},
 
-	log: {
-		type: 'textarea'
-	},
+	// log: {
+	// 	type: 'textarea'
+	// },
 
 	hr: {label: false, order: 14, content: '<hr/>'},
 
@@ -95,12 +95,12 @@ panel.element.addEventListener('click', (e) => {
 });
 
 
-audio.on('play', function () {
-	panel.set('log', panel.get('log') + 'play\n');
-});
-audio.on('pause', function () {
-	panel.set('log', panel.get('log') + 'pause\n');
-});
-audio.on('reset', function () {
-	panel.set('log', panel.get('log') + 'reset\n');
-});
+// audio.on('play', function () {
+// 	panel.set('log', panel.get('log') + 'play\n');
+// });
+// audio.on('pause', function () {
+// 	panel.set('log', panel.get('log') + 'pause\n');
+// });
+// audio.on('reset', function () {
+// 	panel.set('log', panel.get('log') + 'reset\n');
+// });
