@@ -275,6 +275,14 @@ AppAudio.prototype.init = function init (opts) {
 		}
 	});
 
+	//init recent
+	this.recentEl.addEventListener('click', (e) => {
+		let target = e.target.closest('.aa-recent-item');
+		if (!target) return;
+		let src = target.getAttribute('data-source');
+		this.setSource(src);
+	});
+
 	//create progress
 	this.progressEl = document.createElement('div');
 	this.progressEl.className = 'aa-progress';
@@ -395,7 +403,7 @@ AppAudio.prototype.update = function update (opts) {
 	if (this.recent) {
 		let html = ``;
 		this.recentSources.forEach((src) => {
-			html += `<li class="aa-item aa-recent-item">${src}</li>`
+			html += `<li class="aa-item aa-recent-item" data-source="${src}">${src}</li>`
 		});
 		this.recentEl.innerHTML = html;
 	}

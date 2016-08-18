@@ -31,7 +31,7 @@ let ghIcon = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink=
 //create audio
 let audio = new Audio({
 	color: 'white',
-	// loop: false
+	loop: false
 });
 
 //init settings panel
