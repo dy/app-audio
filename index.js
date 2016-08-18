@@ -132,7 +132,6 @@ AppAudio.prototype.init = function init (opts) {
 	this.gainNode = this.context.createGain();
 	this.gainNode.connect(this.context.destination);
 
-
 	//UI
 	//ensure container
 	if (!this.container) this.container = document.body || document.documentElement;
@@ -147,7 +146,7 @@ AppAudio.prototype.init = function init (opts) {
 	this.element.innerHTML = `
 		<label for="aa-dropdown-toggle" class="aa-content">
 			<i class="aa-icon">${this.icons.eject}</i>
-			<input class="aa-input" value="Select source" readonly/>
+			<input class="aa-input" value="" readonly/>
 		</label>
 		<a href="#playback" class="aa-button"><i class="aa-icon"></i></a>
 	`;
@@ -322,7 +321,25 @@ AppAudio.prototype.init = function init (opts) {
 		}
 	}
 
-	this.update(opts);
+	//hack to set input element width
+	let style = getComputedStyle(this.inputEl);
+	this.testEl = document.createElement('div');
+	this.testEl.style.fontFamily = style.fontFamily;
+	this.testEl.style.fontSize = style.fontSize;
+	this.testEl.style.letterSpacing = style.letterSpacing;
+	this.testEl.style.textTransform = style.textTransform;
+	this.testEl.style.fontWeight = style.fontWeight;
+	this.testEl.style.fontStyle = style.fontStyle;
+	this.testEl.style.padding = style.padding;
+	this.testEl.style.margin = style.margin;
+	this.testEl.style.border = style.border;
+	this.testEl.style.position = 'fixed';
+	this.testEl.style.top = '-1000px';
+	this.testEl.style.left = '-1000px';
+
+	this.container.appendChild(this.testEl);
+
+	this.reset();
 };
 
 //keep app state updated
@@ -343,6 +360,9 @@ AppAudio.prototype.update = function update (opts) {
 	this.element.style.color = this.color;
 	this.progressEl.style.color = this.color;
 	this.dropEl.style.color = this.color;
+
+	//update width
+	this.inputEl.style.width = getComputedStyle(this.testEl).width;
 
 	return this;
 };
@@ -504,6 +524,9 @@ AppAudio.prototype.info = function info (msg, icon) {
 	this.inputEl.value = msg;
 	this.iconEl.innerHTML = icon || this.icons.loading;
 	this.inputEl.title = this.inputEl.value;
+
+	this.testEl.innerHTML = this.inputEl.value;
+	this.inputEl.style.width = getComputedStyle(this.testEl).width;
 
 	return this;
 };

@@ -9,18 +9,7 @@
 .app-audio input[type=file]::-webkit-file-upload-button {
 	cursor: pointer;
 }
-.app-audio i {
-	fill: currentColor;
-	width: 1.4rem;
-	height: 1.4rem;
-	position: relative;
-	display: inline-block;
-	font-style: normal;
-	vertical-align: top;
-}
-.app-audio i {
-}
-.app-audio i svg {
+.app-audio svg {
 	margin-bottom: -.375rem;
 	max-width: 100%;
 	max-height: 100%;
@@ -33,10 +22,11 @@ body.app-audio-container {
 }
 
 
+
 /** Components */
 .app-audio {
 	position: absolute;
-	top: 0;
+	top: .5rem;
 	left: 0;
 	line-height: 2rem;
 	font-family: sans-serif;
@@ -44,8 +34,41 @@ body.app-audio-container {
 	-moz-user-select: none;
 	user-select: none;
 	padding: 0 .5rem;
+	min-width: 200px;
+}
+.aa-icon {
+	fill: currentColor;
+	width: 1.4rem;
+	height: 1.4rem;
+	position: relative;
+	display: inline-block;
+	font-style: normal;
+	vertical-align: top;
 }
 
+.aa-content {
+	position: relative;
+	height: 2rem;
+	display: inline-block;
+	line-height: 2rem;
+	cursor: pointer;
+}
+.aa-content:before {
+	content: '';
+	position: absolute;
+	background: currentColor;
+	opacity: .25;
+	height: .15rem;
+	bottom: .25rem;
+	right: 0;
+	width: calc(100% - 1.7rem);
+}
+.aa-content.aa-active:before {
+	opacity: .75;
+}
+.aa-content:hover:before {
+	opacity: 1;
+}
 .aa-input {
 	-webkit-appearance: none;
 	-moz-appearance: none;
@@ -58,31 +81,15 @@ body.app-audio-container {
 	font-size: 1rem;
 	font-family: inherit;
 	display: inline;
-	line-height: 2;
+	line-height: 1;
 	color: inherit;
 	pointer-events: none;
 	font-weight: bold;
 }
-.aa-content {
-	height: 2rem;
-	display: inline-block;
-	line-height: 2rem;
-	cursor: pointer;
-}
-.aa-active:after {
-	content: '';
-	background: currentColor;
-	z-index: 0;
-	opacity: .1;
-	top: 0;
-	left: 0;
-	position: absolute;
-	width: 100%;
-	height: 100%;
-}
 .aa-button {
 	line-height: 2rem;
 	display: inline-block;
+	margin-left: .5rem;
 }
 .aa-progress {
 	margin: 0;

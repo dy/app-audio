@@ -1,7 +1,7 @@
 const Audio = require('./');
 const css = require('insert-styles');
 const palettes = require('nice-color-palettes');
-const Settings = require('settings-panel');
+const Settings = require('../settings-panel');
 
 
 // prepare mobile
