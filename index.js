@@ -481,16 +481,20 @@ AppAudio.prototype.setSource = function (src) {
 			return this;
 		}
 
+
+		this.saveState();
 		this.info(`Loading ${src}`, this.icons.loading);
 
-		this.reset();
-
-		this.player = new Player(src, {
+		let player = new Player(src, {
 			context: this.context,
 			loop: this.loop,
 			buffer: isMobile, //FIXME: this can be always false here i guess
 			crossOrigin: 'Anonymous'
 		}).on('load', () => {
+			this.reset();
+
+			this.player = player;
+
 			this.source = src;
 
 			this.info(src, this.icons.url);
@@ -501,6 +505,7 @@ AppAudio.prototype.setSource = function (src) {
 
 			this.emit('source', this.player.node, src);
 		}).on('error', (err) => {
+			this.restoreState();
 			this.error(err);
 		});
 	}
