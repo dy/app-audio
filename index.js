@@ -3,6 +3,7 @@
  *
  * @module sound-input
  */
+'use strict';
 
 const extend = require('just-extend');
 const inherits = require('inherits');
@@ -56,8 +57,14 @@ AppAudio.prototype.url = true;
 //Enable signal input
 AppAudio.prototype.signal = true;
 
-//Show recent files list
+//Show recent sources list
 AppAudio.prototype.recent = true;
+
+//Max number of recent sources
+AppAudio.prototype.maxRecent = 5;
+
+//Show next sources list
+AppAudio.prototype.next = true;
 
 //Enable mic input
 AppAudio.prototype.mic = !!(navigator.mediaDevices || navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia);
@@ -128,6 +135,7 @@ AppAudio.prototype.init = function init (opts) {
 	this.currentSource = null;
 	this.nextSources = [];
 	this.recentSources = [];
+	this.recentTitles = [];
 
 	//audio
 	this.gainNode = this.context.createGain();
@@ -149,7 +157,7 @@ AppAudio.prototype.init = function init (opts) {
 			<i class="aa-icon">${this.icons.eject}</i>
 			<input class="aa-input" value="" readonly/>
 		</label>
-		<a href="#playback" class="aa-button"><i class="aa-icon"></i></a>
+		<a href="#playback" class="aa-button" hidden><i class="aa-icon"></i></a>
 	`;
 	this.iconEl = this.element.querySelector('.aa-icon');
 	this.contentEl = this.element.querySelector('.aa-content');
@@ -185,6 +193,7 @@ AppAudio.prototype.init = function init (opts) {
 			<li class="aa-item aa-item-short" title="Rectangle"><i class="aa-icon">${this.icons.rectangle}</i></li>
 			<li class="aa-item aa-item-short" title="White noise"><i class="aa-icon">${this.icons.whitenoise}</i></li>
 		</ul>
+		<ul class="aa-items aa-next" data-title="Next" hidden></ul>
 		<ul class="aa-items aa-recent" data-title="Recent" hidden></ul>
 	`;
 	this.fileEl = this.dropdownEl.querySelector('.aa-file');
@@ -194,10 +203,11 @@ AppAudio.prototype.init = function init (opts) {
 	this.noiseEl = this.dropdownEl.querySelector('.aa-noise');
 	this.signalEl = this.dropdownEl.querySelector('.aa-signal');
 	this.recentEl = this.dropdownEl.querySelector('.aa-recent');
+	this.nextEl = this.dropdownEl.querySelector('.aa-next');
 	this.element.appendChild(this.dropdownEl);
 
 	//init playpayse
-	this.playEl.addEventListener('click', e => {
+	this.buttonEl.addEventListener('click', e => {
 		e.preventDefault();
 
 		if (this.isPaused) {
@@ -214,17 +224,26 @@ AppAudio.prototype.init = function init (opts) {
 		this.inputEl.style.width = getComputedStyle(this.testEl).width;
 	});
 
+	//init soundcloud
+	this.soundcloudEl.addEventListener('click', e => {
+		this.inputEl.focus();
+		this.info('https://', this.icons.soundcloud);
+		this.inputEl.removeAttribute('readonly');
+		this.buttonEl.setAttribute('hidden', true);
+		this.inputEl.select();
+	});
+
 	//init url
 	this.urlEl.addEventListener('click', e => {
 		this.inputEl.focus();
+		this.info('https://', this.icons.url);
+		this.inputEl.removeAttribute('readonly');
+		this.buttonEl.setAttribute('hidden', true);
+		this.inputEl.select();
 	});
 	this.inputEl.addEventListener('focus', e => {
 		this.saveState();
-		this.inputEl.removeAttribute('readonly');
 		this.contentEl.classList.add('aa-focus');
-		this.playEl.setAttribute('hidden', true);
-		this.info('https://', this.icons.url);
-		this.inputEl.select();
 	});
 	this.inputEl.addEventListener('keypress', e => {
 		if (e.which === 13) {
@@ -277,7 +296,15 @@ AppAudio.prototype.init = function init (opts) {
 
 	//init recent
 	this.recentEl.addEventListener('click', (e) => {
-		let target = e.target.closest('.aa-recent-item');
+		let target = e.target.closest('.aa-item');
+		if (!target) return;
+		let src = target.getAttribute('data-source');
+		this.setSource(src);
+	});
+
+	//init recent
+	this.nextEl.addEventListener('click', (e) => {
+		let target = e.target.closest('.aa-item');
 		if (!target) return;
 		let src = target.getAttribute('data-source');
 		this.setSource(src);
@@ -382,13 +409,13 @@ AppAudio.prototype.update = function update (opts) {
 
 	//hide/unhide proper elements
 	this.icon ? this.iconEl.removeAttribute('hidden') : this.iconEl.setAttribute('hidden', true);
-	this.play ? this.buttonEl.removeAttribute('hidden') : this.buttonEl.setAttribute('hidden', true);
 	this.file ? this.fileEl.removeAttribute('hidden') : this.fileEl.setAttribute('hidden', true);
 	this.url ? this.urlEl.removeAttribute('hidden') : this.urlEl.setAttribute('hidden', true);
 	this.signal ? this.signalEl.removeAttribute('hidden') : this.signalEl.setAttribute('hidden', true);
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
 	this.recent && this.recentSources.length ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
+	this.next && this.nextSources.length ? this.nextEl.removeAttribute('hidden') : this.nextEl.setAttribute('hidden', true);
 
 	//apply color
 	this.element.style.color = this.color;
@@ -402,10 +429,20 @@ AppAudio.prototype.update = function update (opts) {
 	this.recentEl.innerHTML = '';
 	if (this.recent) {
 		let html = ``;
-		this.recentSources.forEach((src) => {
-			html += `<li class="aa-item aa-recent-item" data-source="${src}">${src}</li>`
+		this.recentSources.forEach((src, i) => {
+			html += `<li class="aa-item aa-recent-item" data-source="${src}">${this.recentTitles[i]}</li>`
 		});
 		this.recentEl.innerHTML = html;
+	}
+
+	//update next list
+	this.nextEl.innerHTML = '';
+	if (this.next) {
+		let html = ``;
+		this.nextSources.forEach((src) => {
+			html += `<li class="aa-item aa-next-item" data-source="${src}">${src}</li>`
+		});
+		this.nextEl.innerHTML = html;
 	}
 
 	return this;
@@ -414,6 +451,8 @@ AppAudio.prototype.update = function update (opts) {
 
 //set current source to play
 AppAudio.prototype.setSource = function (src) {
+	let that = this;
+
 	//undefined source does not change current state
 	if (!src) return this;
 
@@ -442,6 +481,13 @@ AppAudio.prototype.setSource = function (src) {
 
 		this.emit('source', this.micNode, this.currentSource);
 
+		return this;
+	}
+
+	//list of sources should all be added to next
+	if (Array.isArray(src)) {
+		this.nextSources = src.slice(1);
+		this.setSource(src[0]);
 		return this;
 	}
 
@@ -490,9 +536,90 @@ AppAudio.prototype.setSource = function (src) {
 		})
 		.on('error', e => this.error(e))
 		.on('ended', e => {
-			this.next();
+			//FIXME
+			// this.next();
 		});
 
+	}
+
+	//soundcloud
+	else if (/soundcloud/.test(src)) {
+		this.saveState();
+
+		this.info('Connecting to soundcloud', this.icons.loading);
+		let token = this.token.soundcloud || this.token;
+
+		if (!isMobile) {
+			xhr({
+				uri: `https://api.soundcloud.com/resolve.json?client_id=${token}&url=${src}`,
+				method: 'GET'
+			}, (err, response) => {
+				if (err) {
+					this.restoreState();
+					return this.error(err);
+				}
+
+				let json = JSON.parse(response.body);
+
+				setSoundcloud(json);
+			});
+			return this;
+		}
+
+
+		function setSoundcloud (json) {
+			let streamUrl = json.stream_url + '?client_id=' + token;
+
+			//if list of tracks - setup first, save others for next
+			if (json.tracks) {
+				that.nextSources = json.tracks.slice(1).map(t => t.permalink_url);
+				return that.setSource(json.tracks[0].permalink_url);
+			}
+
+			let titleHtml = json.title;
+			if (json.user) {
+				titleHtml += ` by ${json.user.username}`;
+			}
+
+			let player = new Player(streamUrl, {
+				context: that.context,
+				loop: that.loop,
+				buffer: isMobile,
+				crossOrigin: 'Anonymous'
+			}).on('decoding', () => {
+				that.info(`Decoding ${titleHtml}`, that.icons.loading);
+			}).on('progress', (e) => {
+				if (e === 0) return;
+				that.info(`Loading ${titleHtml}`, that.icons.loading)
+			}).on('load', () => {
+
+				that.reset();
+
+				that.player = player;
+
+				that.currentSource = streamUrl;
+
+				that.addRecent(titleHtml, src);
+				that.save && that.saveSources();
+				that.update();
+
+				that.info(titleHtml, that.icons.soundcloud);
+
+				that.player.node.connect(that.gainNode);
+
+				that.autoplay && that.play();
+
+				that.emit('source', that.player.node, streamUrl);
+			}).on('error', (err) => {
+				that.restoreState();
+				that.error(err);
+			}).on('end', () => {
+				//FIXME: tail next track
+				that.pause()
+			});
+		}
+
+		return this;
 	}
 
 	//url
@@ -517,7 +644,8 @@ AppAudio.prototype.setSource = function (src) {
 			this.player = player;
 
 			this.currentSource = src;
-			this.save && this.saveSources(this.currentSource);
+			this.addRecent(src, src);
+			this.save && this.saveSources();
 			this.update();
 
 			this.info(src, this.icons.url);
@@ -531,24 +659,42 @@ AppAudio.prototype.setSource = function (src) {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
+			//FIXME: tail next track
 			this.pause()
 		});
+	}
+
+	function createPlayer () {
+
 	}
 
 	return this;
 };
 
+//Add recent track
+AppAudio.prototype.addRecent = function (title, src) {
+	if (!src) return this;
+
+	if (this.recentSources.indexOf(src) < 0) {
+		this.recentSources.push(src);
+		this.recentTitles.push(title);
+	}
+
+	this.recentSources = this.recentSources.slice(-this.maxRecent);
+	this.recentTitles = this.recentTitles.slice(-this.maxRecent);
+
+	return this;
+}
+
 //Save/load recent tracks to list
 AppAudio.prototype.storageKey = 'app-audio';
 AppAudio.prototype.storage = sessionStorage || localStorage;
-AppAudio.prototype.saveSources = function (src) {
+AppAudio.prototype.saveSources = function () {
 	if (!this.storage) return this;
 
-	if (src && this.recentSources.indexOf(src) < 0) this.recentSources.push(src);
-
 	this.storage.setItem(this.storageKey, JSON.stringify({
-		recent: this.recentSources,
-		current: this.currentSource
+		recentSources: this.recentSources,
+		recentTitles: this.recentTitles
 	}));
 
 	return this;
@@ -559,10 +705,12 @@ AppAudio.prototype.loadSources = function () {
 	let obj = this.storage.getItem(this.storageKey);
 	if (!obj) return this;
 
-	let {recent, current} = JSON.parse(obj);
-
-	this.recentSources = recent;
-	this.setSource(current);
+	let {recentSources, recentTitles, current} = JSON.parse(obj);
+	if (recentSources && recentSources.length) {
+		this.recentSources = recentSources;
+		this.recentTitles = recentTitles;
+		this.setSource(this.recentSources[0]);
+	}
 
 	return this;
 }
@@ -572,7 +720,7 @@ AppAudio.prototype.play = function () {
 	this.isPaused = false;
 	this.playEl.innerHTML = this.icons.pause;
 
-	this.play && this.playEl.removeAttribute('hidden');
+	this.play && this.buttonEl.removeAttribute('hidden');
 
 	this.player && this.player.play();
 	this.gainNode.gain.value = 1;
@@ -587,7 +735,7 @@ AppAudio.prototype.pause = function () {
 
 	this.player && this.player.pause();
 
-	this.play && this.playEl.removeAttribute('hidden');
+	this.play && this.buttonEl.removeAttribute('hidden');
 
 	this.gainNode.gain.value = 0;
 
@@ -607,8 +755,8 @@ AppAudio.prototype.reset = function () {
 
 	//reset UI
 	this.playEl.innerHTML = this.icons.play;
-	this.playEl.setAttribute('hidden', true);
-	this.info('Select source', this.icons.eject);
+	this.buttonEl.setAttribute('hidden', true);
+	this.info('', this.icons.eject);
 
 	//disconnect audio
 	if (this.player) {
@@ -650,27 +798,30 @@ AppAudio.prototype.hide = function (src) {
 AppAudio.prototype.saveState = function () {
 	this.lastTitle = this.inputEl.value;
 	this.lastIcon = this.iconEl.innerHTML;
-	this.lastPlayVisibility = this.playEl.hasAttribute('hidden');
+	this.lastPlayVisibility = this.buttonEl.hasAttribute('hidden');
 
 	return this;
 };
 AppAudio.prototype.restoreState = function (state) {
 	state = state || this;
+
 	this.info(state.lastTitle, state.lastIcon);
-	if (state.lastPlayVisibility) this.playEl.setAttribute('hidden', true);
-	else this.playEl.removeAttribute('hidden');
+	if (state.lastPlayVisibility) this.buttonEl.setAttribute('hidden', true);
+	else {
+		this.buttonEl.removeAttribute('hidden');
+	}
 
 	return this;
 };
 
 //Duration of error message
-AppAudio.prototype.errorDuration = 1600;
+AppAudio.prototype.errorDuration = 2000;
 
 //Display error for a moment
 AppAudio.prototype.error = function error (msg) {
 	this.saveState();
 	this.info(msg, this.icons.error);
-	this.playEl.setAttribute('hidden', true);
+	this.buttonEl.setAttribute('hidden', true);
 	this.contentEl.classList.add('aa-error');
 
 	//FIXME: emitter shits the bed here
@@ -685,7 +836,7 @@ AppAudio.prototype.error = function error (msg) {
 };
 //Display message
 AppAudio.prototype.info = function info (msg, icon) {
-	this.inputEl.value = msg;
+	this.inputEl.value = msg || 'Select source ▾';
 	this.iconEl.innerHTML = icon || this.icons.loading;
 	this.inputEl.title = this.inputEl.value;
 

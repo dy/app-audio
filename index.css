@@ -97,6 +97,9 @@ body.app-audio-container {
 	pointer-events: none;
 	font-weight: bold;
 	min-width: 3em;
+	text-overflow: ellipsis;
+	max-width: 40vw;
+	overflow: hidden;
 }
 .aa-button {
 	line-height: 2rem;
@@ -198,6 +201,9 @@ body.app-audio-container {
 	padding: 0 .5rem;
 	position: relative;
 	z-index: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .aa-item-short {
 	display: inline-block;
