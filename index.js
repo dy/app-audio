@@ -15,7 +15,6 @@ const isMobile = require('is-mobile')();
 const xhr = require('xhr');
 const isUrl = require('is-url');
 const isObject = require('is-plain-obj');
-const qs = require('querystring');
 const Player = require('web-audio-player');
 const pad = require('left-pad');
 const capfirst = require('capitalize-first-letter');
@@ -691,7 +690,7 @@ AppAudio.prototype.set = function (src) {
 
 		this.currentSource = src;
 		this.save && this.saveSources();
-		this.info('Noise', this.icons.noise);
+		this.info('Noise', this.icons.whitenoise);
 		this.bufNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
 		this.emit('ready', this.bufNode, src);
