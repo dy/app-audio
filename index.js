@@ -105,6 +105,7 @@ AppAudio.prototype.context = audioContext;
 
 //Icon paths
 AppAudio.prototype.icons = {
+	next: fs.readFileSync(__dirname + '/image/next.svg', 'utf8'),
 	record: fs.readFileSync(__dirname + '/image/record.svg', 'utf8'),
 	error: fs.readFileSync(__dirname + '/image/error.svg', 'utf8'),
 	soundcloud: fs.readFileSync(__dirname + '/image/soundcloud.svg', 'utf8'),
@@ -157,13 +158,15 @@ AppAudio.prototype.init = function init (opts) {
 			<i class="aa-icon">${this.icons.eject}</i>
 			<input class="aa-input" value="" readonly/>
 		</label>
-		<a href="#playback" class="aa-button" hidden><i class="aa-icon"></i></a>
+		<a href="#playback" class="aa-button aa-button-play" hidden><i class="aa-icon"></i></a>
+		<a href="#next" class="aa-button aa-button-next" hidden><i class="aa-icon">${this.icons.next}</i></a>
 	`;
 	this.iconEl = this.element.querySelector('.aa-icon');
 	this.contentEl = this.element.querySelector('.aa-content');
 	this.inputEl = this.element.querySelector('.aa-input');
-	this.buttonEl = this.element.querySelector('.aa-button');
+	this.buttonEl = this.element.querySelector('.aa-button-play');
 	this.playEl = this.buttonEl.querySelector('.aa-icon');
+	this.nextButtonEl = this.element.querySelector('.aa-button-next');
 
 	this.contentEl.addEventListener('click', () => {
 		if (this.dropdownEl.hasAttribute('hidden')) {
@@ -216,6 +219,12 @@ AppAudio.prototype.init = function init (opts) {
 		else {
 			this.pause();
 		}
+	});
+
+	//init next
+	this.nextButtonEl.addEventListener('click', e => {
+		e.preventDefault();
+		this.playNext();
 	});
 
 	//init input
@@ -302,7 +311,7 @@ AppAudio.prototype.init = function init (opts) {
 		this.setSource(src);
 	});
 
-	//init recent
+	//init next list
 	this.nextEl.addEventListener('click', (e) => {
 		let target = e.target.closest('.aa-item');
 		if (!target) return;
@@ -413,7 +422,15 @@ AppAudio.prototype.update = function update (opts) {
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
 	this.recent && this.recentSources.length ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
-	this.next && this.nextSources.length ? this.nextEl.removeAttribute('hidden') : this.nextEl.setAttribute('hidden', true);
+	if (this.next) {
+		if (this.nextSources.length) {
+			this.nextEl.removeAttribute('hidden');
+			this.nextButtonEl.removeAttribute('hidden');
+		} else {
+			this.nextEl.setAttribute('hidden', true);
+			this.nextButtonEl.setAttribute('hidden', true);
+		}
+	}
 
 	//apply color
 	this.element.style.color = this.color;
@@ -428,7 +445,7 @@ AppAudio.prototype.update = function update (opts) {
 	if (this.recent) {
 		let html = ``;
 		this.recentSources.forEach((src, i) => {
-			html += `<li class="aa-item aa-recent-item" data-source="${src}">${this.recentTitles[i]}</li>`
+			html += `<li class="aa-item aa-recent-item" title="${this.recentTitles[i]}" data-source="${src}">${this.recentTitles[i]}</li>`
 		});
 		this.recentEl.innerHTML = html;
 	}
@@ -438,7 +455,7 @@ AppAudio.prototype.update = function update (opts) {
 	if (this.next) {
 		let html = ``;
 		this.nextSources.forEach((src) => {
-			html += `<li class="aa-item aa-next-item" data-source="${src}">${src}</li>`
+			html += `<li class="aa-item aa-next-item" title="${src.name || src}" data-source="${src}">${src.name || src}</li>`
 		});
 		this.nextEl.innerHTML = html;
 	}
@@ -536,12 +553,7 @@ AppAudio.prototype.setSource = function (src) {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
-			this.pause();
-
-			let src = this.nextSources.shift();
-			if (src) {
-				this.setSource(src);
-			}
+			this.playNext();
 		});
 
 	}
@@ -611,6 +623,7 @@ AppAudio.prototype.setSource = function (src) {
 			//if list of tracks - setup first, save others for next
 			if (json.tracks) {
 				that.nextSources = json.tracks.slice(1).map(t => t.permalink_url);
+				// that.addRecent(json.title, json.permalink_url);
 				return that.setSource(json.tracks[0].permalink_url);
 			}
 
@@ -651,12 +664,7 @@ AppAudio.prototype.setSource = function (src) {
 				that.restoreState();
 				that.error(err);
 			}).on('end', () => {
-				that.pause();
-
-				let src = this.nextSources.shift();
-				if (src) {
-					this.setSource(src);
-				}
+				that.playNext();
 			});
 		}
 
@@ -699,12 +707,7 @@ AppAudio.prototype.setSource = function (src) {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
-			this.pause();
-
-			let src = this.nextSources.shift();
-			if (src) {
-				this.setSource(src);
-			}
+			this.playNext();
 		});
 	}
 
@@ -780,6 +783,19 @@ AppAudio.prototype.pause = function () {
 	this.gainNode.gain.value = 0;
 
 	this.emit('pause', this.micNode);
+
+	return this;
+};
+
+//play next track if any
+AppAudio.prototype.playNext = function () {
+	this.pause();
+
+	let src = this.nextSources.shift();
+
+	if (src) {
+		this.setSource(src);
+	}
 
 	return this;
 };
@@ -877,7 +893,7 @@ AppAudio.prototype.error = function error (msg) {
 AppAudio.prototype.info = function info (msg, icon) {
 	this.inputEl.value = msg || 'Select source ▾';
 	this.iconEl.innerHTML = icon || this.icons.loading;
-	this.inputEl.title = this.inputEl.value;
+	this.contentEl.title = this.inputEl.value;
 
 	this.testEl.innerHTML = this.inputEl.value;
 	this.inputEl.style.width = getComputedStyle(this.testEl).width;
