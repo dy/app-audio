@@ -610,6 +610,7 @@ exports.encode = exports.stringify = require('./encode');
  *
  * @module sound-input
  */
+'use strict';
 
 var extend = require('just-extend');
 var inherits = require('inherits');
@@ -623,15 +624,14 @@ var isUrl = require('is-url');
 var isObject = require('is-plain-obj');
 var qs = require('querystring');
 var Player = require('web-audio-player');
-var alpha = require('color-alpha');
+var pad = require('left-pad');
+var capfirst = require('capitalize-first-letter');
 require('get-float-time-domain-data');
-
 
 module.exports = AppAudio;
 
 
-css("/** Default styles reset */\r\n.app-audio [hidden] {\r\n\tdisplay: none!important;\r\n}\r\n.app-audio * {\r\n\tbox-sizing: border-box;\r\n}\r\n.app-audio input[type=file],\r\n.app-audio input[type=file]::-webkit-file-upload-button {\r\n\tcursor: pointer;\r\n}\r\n.app-audio i {\r\n\tfill: currentColor;\r\n\twidth: 1.4rem;\r\n\theight: 1.4rem;\r\n\tposition: relative;\r\n\tdisplay: inline-block;\r\n\tfont-style: normal;\r\n\tvertical-align: top;\r\n}\r\n.app-audio i {\r\n}\r\n.app-audio i svg {\r\n\tmargin-bottom: -.375rem;\r\n\tmax-width: 100%;\r\n\tmax-height: 100%;\r\n}\r\n.app-audio a {\r\n\tcolor: inherit;\r\n}\r\nbody.app-audio-container {\r\n\tmin-height: 100vh;\r\n}\r\n\r\n\r\n/** Components */\r\n.app-audio {\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\tline-height: 2rem;\r\n\tfont-family: sans-serif;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\tuser-select: none;\r\n\tpadding: 0 .5rem;\r\n}\r\n\r\n.aa-input {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\tappearance: none;\r\n\tborder: 0;\r\n\tborder-radius: 0;\r\n\tbackground: none;\r\n\tmargin: 0;\r\n\toutline: none;\r\n\tfont-size: 1rem;\r\n\tfont-family: inherit;\r\n\tdisplay: inline;\r\n\tline-height: 2;\r\n\tcolor: inherit;\r\n\tpointer-events: none;\r\n\tfont-weight: bold;\r\n}\r\n.aa-content {\r\n\theight: 2rem;\r\n\tdisplay: inline-block;\r\n\tline-height: 2rem;\r\n\tcursor: pointer;\r\n}\r\n.aa-active:after {\r\n\tcontent: '';\r\n\tbackground: currentColor;\r\n\tz-index: 0;\r\n\topacity: .1;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\tposition: absolute;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n}\r\n.aa-button {\r\n\tline-height: 2rem;\r\n\tdisplay: inline-block;\r\n}\r\n.aa-progress {\r\n\tmargin: 0;\r\n\tposition: fixed;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\theight: .2rem;\r\n\tbackground: currentColor;\r\n\ttransition: .1s linear width;\r\n\tz-index: 999;\r\n}\r\n\r\n\r\n/** Drag and Drop */\r\n.aa-drop {\r\n\tposition: fixed;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tdisplay: none;\r\n}\r\n.aa-drop:after {\r\n\tcontent: '⎗';\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tleft: 0;\r\n\tright: 0;\r\n\tmargin: auto;\r\n\twidth: 20vh;\r\n\theight: 20vh;\r\n\tz-index: 2;\r\n\tfont-size: 20vh;\r\n\ttext-align: center;\r\n\tline-height: 20vh;\r\n\tdisplay: block;\r\n}\r\n.aa-drop:before {\r\n\tcontent: '';\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\tright: 0;\r\n\tbottom: 0;\r\n\tmargin: 0;\r\n\tborder: .2em dashed;\r\n\tz-index: 1;\r\n\tdisplay: block;\r\n}\r\n.aa-dragover .aa-drop {\r\n\tdisplay: block;\r\n}\r\n.aa-dragover .aa-button {\r\n\tdisplay: none;\r\n}\r\n\r\n\r\n/** Dropdown */\r\n.aa-dropdown {\r\n\tposition: absolute;\r\n\tfont-family: inherit;\r\n\tline-height: 2rem;\r\n\tleft: 0;\r\n\ttop: 100%;\r\n\twidth: 100%;\r\n}\r\n.aa-dropdown:after {\r\n\tcontent: '';\r\n\tbackground: currentColor;\r\n\tz-index: 0;\r\n\topacity: .1;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\tposition: absolute;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n}\r\n.aa-items {\r\n\tlist-style: none;\r\n\tpadding: 0;\r\n\tmargin: .5rem 0;\r\n}\r\n.aa-items:before {\r\n\tcontent: attr(data-title);\r\n\tfont-weight: bold;\r\n\tpadding-left: .5rem;\r\n\tdisplay: block;\r\n}\r\n.aa-item {\r\n\tcursor: pointer;\r\n\tpadding: 0 .5rem;\r\n\tposition: relative;\r\n\tz-index: 1;\r\n}\r\n.aa-item-short {\r\n\tdisplay: inline-block;\r\n}\r\n.aa-item:hover:after {\r\n\tcontent: '';\r\n\tposition: absolute;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\tbackground: currentColor;\r\n\topacity: .25;\r\n}\r\n.aa-file-input {\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\theight: 100%;\r\n\twidth: 100%;\r\n\tcursor: pointer;\r\n\topacity: 0;\r\n\tz-index: 1;\r\n}");
-
+css("/** Default styles reset */\r\n.app-audio [hidden] {\r\n\tdisplay: none!important;\r\n}\r\n.app-audio * {\r\n\tbox-sizing: border-box;\r\n}\r\n.app-audio input[type=file],\r\n.app-audio input[type=file]::-webkit-file-upload-button {\r\n\tcursor: pointer;\r\n}\r\n.app-audio svg {\r\n\tmargin-bottom: -.375rem;\r\n\tmax-width: 100%;\r\n\tmax-height: 100%;\r\n}\r\n.app-audio a {\r\n\tcolor: inherit;\r\n}\r\nbody.app-audio-container {\r\n\tmin-height: 100vh;\r\n}\r\n\r\n\r\n\r\n/** Components */\r\n.app-audio {\r\n\tposition: absolute;\r\n\ttop: .5rem;\r\n\tleft: 0;\r\n\tline-height: 2rem;\r\n\tfont-family: sans-serif;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\tuser-select: none;\r\n\tpadding: 0 .5rem;\r\n\tmin-width: 200px;\r\n}\r\n.aa-icon {\r\n\tfill: currentColor;\r\n\twidth: 1.4rem;\r\n\theight: 1.4rem;\r\n\tposition: relative;\r\n\tdisplay: inline-block;\r\n\tfont-style: normal;\r\n\tvertical-align: top;\r\n}\r\n\r\n.aa-content {\r\n\tposition: relative;\r\n\theight: 2rem;\r\n\tdisplay: inline-block;\r\n\tline-height: 2rem;\r\n\tcursor: pointer;\r\n\tz-index: 1;\r\n}\r\n.aa-content:before {\r\n\tcontent: '';\r\n\tposition: absolute;\r\n\topacity: .25;\r\n\theight: 0;\r\n\tbottom: .25rem;\r\n\tborder-bottom: .13rem dashed currentColor;\r\n\tright: 0;\r\n\twidth: calc(100% - 1.6rem);\r\n}\r\n.aa-content.aa-active:before {\r\n\topacity: .75;\r\n}\r\n.aa-content:hover:before {\r\n\topacity: 1;\r\n}\r\n.aa-focus:before {\r\n\tborder-bottom-style: solid;\r\n\topacity: .95;\r\n}\r\n.aa-error:before {\r\n\topacity: 0;\r\n}\r\n.aa-input {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\tappearance: none;\r\n\tborder: 0;\r\n\tborder-radius: 0;\r\n\tbackground: none;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n\toutline: none;\r\n\tfont-size: 1rem;\r\n\tfont-family: inherit;\r\n\tdisplay: inline;\r\n\tline-height: 1;\r\n\tcolor: inherit;\r\n\tpointer-events: none;\r\n\tfont-weight: bold;\r\n\tmin-width: 2em;\r\n\ttext-overflow: ellipsis;\r\n\tmax-width: 40vw;\r\n\toverflow: hidden;\r\n}\r\n@media (max-width: 640px) {\r\n\t.aa-input {\r\n\t\tmax-width: calc(100vw - 7rem);\r\n\t}\r\n}\r\n.aa-button {\r\n\tline-height: 2rem;\r\n\tdisplay: inline-block;\r\n\tmargin-left: .5rem;\r\n\tz-index: 1;\r\n\tposition: relative;\r\n}\r\n.aa-progress {\r\n\tmargin: 0;\r\n\tposition: fixed;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\theight: .2rem;\r\n\tbackground: currentColor;\r\n\ttransition: .2s linear width;\r\n\tz-index: 999;\r\n}\r\n\r\n\r\n/** Drag and Drop */\r\n.aa-drop {\r\n\tposition: fixed;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tdisplay: none;\r\n}\r\n.aa-drop:after {\r\n\tcontent: '⎗';\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tleft: 0;\r\n\tright: 0;\r\n\tmargin: auto;\r\n\twidth: 20vh;\r\n\theight: 20vh;\r\n\tz-index: 2;\r\n\tfont-size: 20vh;\r\n\ttext-align: center;\r\n\tline-height: 20vh;\r\n\tdisplay: block;\r\n}\r\n.aa-drop:before {\r\n\tcontent: '';\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\tright: 0;\r\n\tbottom: 0;\r\n\tmargin: 0;\r\n\tborder: .2em dashed;\r\n\tz-index: 1;\r\n\tdisplay: block;\r\n}\r\n.aa-dragover .aa-drop {\r\n\tdisplay: block;\r\n}\r\n.aa-dragover .aa-button {\r\n\tdisplay: none;\r\n}\r\n\r\n\r\n/** Dropdown */\r\n.aa-dropdown {\r\n\tposition: absolute;\r\n\tfont-family: inherit;\r\n\tline-height: 2rem;\r\n\tleft: 0;\r\n\ttop: 100%;\r\n\twidth: 100%;\r\n}\r\n.aa-dropdown:after {\r\n\tcontent: '';\r\n\tbackground: currentColor;\r\n\tz-index: 0;\r\n\topacity: .1;\r\n\ttop: -2.5rem;\r\n\tleft: 0;\r\n\tposition: absolute;\r\n\twidth: 100%;\r\n\theight: calc(100% + 2.5rem);\r\n}\r\n.aa-items {\r\n\tlist-style: none;\r\n\tpadding: 0;\r\n\tmargin: .5rem 0;\r\n}\r\n.aa-items:before {\r\n\tcontent: attr(data-title);\r\n\tfont-weight: bold;\r\n\tpadding-left: .5rem;\r\n\tdisplay: block;\r\n}\r\n.aa-item {\r\n\tcursor: pointer;\r\n\tpadding: 0 .5rem;\r\n\tposition: relative;\r\n\tz-index: 1;\r\n    white-space: nowrap;\r\n    overflow: hidden;\r\n    text-overflow: ellipsis;\r\n}\r\n.aa-item-signal {\r\n\tdisplay: inline-block;\r\n}\r\n.aa-item:hover:after {\r\n\tcontent: '';\r\n\tposition: absolute;\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\tbackground: currentColor;\r\n\topacity: .25;\r\n}\r\n.aa-file-input {\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tleft: 0;\r\n\theight: 100%;\r\n\twidth: 100%;\r\n\tcursor: pointer;\r\n\topacity: 0;\r\n\tz-index: 1;\r\n}");
 
 inherits(AppAudio, Emitter);
 
@@ -641,15 +641,20 @@ function AppAudio (opts) {
 
 	this.init(opts);
 
-	this.setSource(this.source);
+	this.set(this.source);
 }
 
+//Default source
+AppAudio.prototype.source = '';
+
+//List of default sources
+AppAudio.prototype.sources = [];
 
 //Observe paste event
 AppAudio.prototype.paste = true;
 
 //Allow dropping files to browser
-AppAudio.prototype.dragAndDrop = true;
+AppAudio.prototype.dragAndDrop = !isMobile;
 
 //Show play/payse buttons
 AppAudio.prototype.play = true;
@@ -663,8 +668,14 @@ AppAudio.prototype.url = true;
 //Enable signal input
 AppAudio.prototype.signal = true;
 
-//Show recent files list
+//Show recent sources list
 AppAudio.prototype.recent = true;
+
+//Max number of recent sources
+AppAudio.prototype.maxRecent = 5;
+
+//Show next sources list
+AppAudio.prototype.next = true;
 
 //Enable mic input
 AppAudio.prototype.mic = !!(navigator.mediaDevices || navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia);
@@ -682,7 +693,7 @@ AppAudio.prototype.loop = true;
 AppAudio.prototype.progress = true;
 
 //Save/load last track
-AppAudio.prototype.save = true;
+AppAudio.prototype.save = !isMobile;
 
 //Display icons
 AppAudio.prototype.icon = true;
@@ -705,22 +716,23 @@ AppAudio.prototype.context = audioContext;
 
 //Icon paths
 AppAudio.prototype.icons = {
+	next: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M164.956 760.276l342.638-220.083c9.624-6.419 14.116-16.043 14.116-26.306s-4.492-19.886-14.116-26.306l-343.277-220.722c-20.535-13.477-48.12 1.283-48.12 26.306v440.804c0.639 25.025 27.594 39.783 48.77 26.306z\"></path>\n<path d=\"M585.234 766.054h44.915c34.655 0 62.885-28.233 62.885-62.885v-378.568c0-34.655-28.233-62.885-62.885-62.885h-44.915c-34.655 0-62.885 28.233-62.885 62.885v378.568c0 34.655 28.233 62.885 62.885 62.885z\"></path>\n</svg>\n",
 	record: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M757.76 818.347H61.44c-29.013 0-52.907-23.893-52.907-52.907V232.96c0-29.013 23.893-52.907 52.907-52.907h696.32c29.013 0 52.907 23.893 52.907 52.907v532.48c0 29.013-23.893 52.907-52.907 52.907zm-682.667-66.56h669.013V246.614H75.093v505.173z\"/><path d=\"M574.293 636.588c-69.973 0-128-56.32-128-126.293s56.32-126.293 128-126.293c69.973 0 128 56.32 128 126.293s-58.027 126.293-128 126.293zm0-186.027c-32.427 0-59.733 27.307-59.733 59.733s27.307 59.733 59.733 59.733 59.733-27.307 59.733-59.733-27.307-59.733-59.733-59.733zM241.493 636.588c-69.973 0-128-56.32-128-126.293s56.32-126.293 128-126.293c69.973 0 128 56.32 128 126.293s-58.027 126.293-128 126.293zm0-186.027c-32.427 0-59.733 27.307-59.733 59.733s27.307 59.733 59.733 59.733c32.427 0 59.733-27.307 59.733-59.733s-27.307-59.733-59.733-59.733z\"/><path d=\"M572.607 450.113h-332.8c-18.773 0-34.133-14.88-34.133-33.067s15.36-33.067 34.133-33.067h332.8c18.773 0 34.133 14.88 34.133 33.067s-17.067 33.067-34.133 33.067z\"/></svg>",
-	error: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M807.303 756.637l-351.17-607.966a53.4 53.4 0 0 0-46.308-26.702h-.416c-19.112 0-36.699 10.12-46.308 26.702L11.915 756.637c-9.564 16.643-9.564 37.104 0 53.706 9.511 16.61 27.209 26.775 46.525 26.775h702.348c19.308 0 37.014-10.165 46.525-26.775 9.564-16.598 9.564-37.087-.008-53.706zm-717.884 8.919l320.193-554.297 320.193 554.297H89.423z\"/><path d=\"M540.178 663.195l-72.859-74.216 70.995-71.763-57.871-57.242-70.161 70.926-70.746-72.058-58.075 57.025 71.584 72.904-73.991 74.804 57.863 57.242 73.157-73.946 72.033 73.353z\"/></svg>",
+	error: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M807.303 772.637l-351.17-607.966c-9.601-16.582-27.188-26.702-46.308-26.702-0.074 0-0.143 0-0.208 0s-0.143 0-0.208 0c-19.112 0-36.699 10.12-46.308 26.702l-351.186 607.966c-9.564 16.643-9.564 37.104 0 53.706 9.511 16.61 27.209 26.775 46.525 26.775h702.348c19.308 0 37.014-10.165 46.525-26.775 9.564-16.598 9.564-37.087-0.008-53.706zM89.419 781.556l320.193-554.297 320.193 554.297h-640.382z\"></path>\n<path d=\"M540.178 679.195l-72.859-74.216 70.995-71.763-57.871-57.242-70.161 70.926-70.746-72.058-58.075 57.025 71.584 72.904-73.991 74.804 57.863 57.242 73.157-73.946 72.033 73.353z\"></path>\n</svg>\n",
 	soundcloud: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"1206\" height=\"1024\" viewBox=\"0 0 1206 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M98.941 666.275c0 12.885 4.665 22.626 14.021 29.237 9.342 6.606 19.326 8.946 29.966 7.002 9.99-1.926 16.994-5.481 21.019-10.638 4.022-5.159 6.034-13.698 6.034-25.614v-140.131c0-9.99-3.468-18.45-10.386-25.362-6.93-6.93-15.39-10.386-25.362-10.386-9.666 0-17.956 3.468-24.894 10.386s-10.386 15.39-10.386 25.362v140.131zM210.078 726.192c0 9.342 3.295 16.353 9.911 21.019s15.066 7.002 25.362 7.002c10.638 0 19.242-2.333 25.856-7.002 6.606-4.664 9.911-11.682 9.911-21.019v-326.653c0-9.666-3.47-17.958-10.386-24.894-6.93-6.93-15.39-10.386-25.362-10.386-9.666 0-17.958 3.47-24.894 10.386-6.93 6.93-10.386 15.216-10.386 24.894v326.653zM320.74 741.659c0 9.342 3.381 16.353 10.144 21.019 6.763 4.664 15.462 7.002 26.091 7.002 10.314 0 18.771-2.333 25.362-7.002 6.606-4.665 9.912-11.682 9.912-21.019v-298.144c0-9.99-3.47-18.522-10.386-25.614-6.93-7.083-15.216-10.638-24.894-10.638-9.99 0-18.522 3.546-25.614 10.638s-10.638 15.625-10.638 25.614v298.144zM431.875 743.101c0 17.724 11.922 26.586 35.766 26.586s35.765-8.862 35.765-26.586v-483.216c0-27.054-8.22-42.354-24.642-45.911-10.638-2.574-21.105 0.486-31.41 9.182s-15.462 20.934-15.462 36.729v483.216zM544.952 757.119v-525.746c0-16.758 4.986-26.73 14.983-29.966 21.582-5.159 43.002-7.725 64.275-7.725 49.29 0 95.203 11.601 137.719 34.794 42.529 23.202 76.915 54.846 103.161 94.951 26.262 40.112 41.481 84.33 45.666 132.643 19.647-8.37 40.59-12.564 62.816-12.564 45.096 0 83.683 15.945 115.725 47.835 32.058 31.892 48.078 70.223 48.078 115.003 0 45.096-16.033 83.601-48.078 115.491s-70.47 47.835-115.255 47.835l-420.399-0.486c-2.898-0.962-5.074-2.741-6.531-5.31s-2.178-4.842-2.178-6.766z\"></path>\n</svg>\n",
 	open: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"851\" height=\"1024\" viewBox=\"0 0 851 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M831.019 413.071c-13.274-16.986-33.621-26.933-55.195-26.933v-140.089c0-38.664-31.379-70.045-70.045-70.045h-140.089c-38.664 0-70.045 31.379-70.045 70.045h-350.222c-38.664 0-70.045 31.379-70.045 70.045v420.267c0 38.664 31.379 70.045 70.045 70.045h560.355c32.466 0 59.503-22.205 67.453-52.149 0.105-0.315 0.456-0.595 0.525-0.875l70.045-280.178c5.218-20.944 0.49-43.147-12.783-60.133zM145.424 316.095h420.267v-70.045h140.089v140.089h-490.311c-32.15 0-60.168 21.889-67.943 53.059l-2.101 8.336v-131.438zM705.781 736.361h-560.355l70.045-280.178h560.355l-70.045 280.178z\"></path>\n</svg>\n",
 	loading: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M640.327 412.161c-45.569 0-82.591 37.025-82.591 85.44s37.025 85.44 82.591 85.44c45.569 0 82.591-37.025 82.591-85.44s-37.025-85.44-82.591-85.44zm-230.688 0c-45.569 0-82.591 37.025-82.591 85.44s37.025 85.44 82.591 85.44c45.569 0 82.591-37.025 82.591-85.44s-37.025-85.44-82.591-85.44zm-230.688 0c-45.569 0-82.591 37.025-82.591 85.44s37.025 85.44 82.591 85.44c45.569 0 82.591-37.025 82.591-85.44s-37.025-85.44-82.591-85.44z\"/></svg>",
 	url: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M407.776 122.436c-199.872 0-362.496 162.624-362.496 362.496s162.624 362.496 362.496 362.496 362.496-162.624 362.496-362.496-162.624-362.496-362.496-362.496zm0 669.216c-39.826 0-83.1-74.988-101.902-187.459 32.351-4.849 66.514-7.709 101.902-7.709s69.551 2.9 101.902 7.709c-18.801 112.471-62.075 187.459-101.902 187.459zm0-250.944c-37.837 0-74.271 2.989-108.846 8.152-1.764-20.485-2.674-41.864-2.674-63.896s.91-43.411 2.674-63.896c34.574 5.164 71.009 8.152 108.846 8.152s74.271-2.989 108.846-8.152c1.764 20.485 2.674 41.864 2.674 63.896s-.91 43.411-2.674 63.896c-34.574-5.164-71.009-8.152-108.846-8.152zm-306.72-55.776c0-42.775 8.797-83.471 24.738-120.445 32.174 19.486 72.596 34.896 117.948 45.9-2.175 23.885-3.262 48.848-3.262 74.586s1.087 50.612 3.262 74.586c-45.409 11.052-85.775 26.374-117.948 45.9-15.91-37.023-24.738-77.751-24.738-120.526zm306.72-306.72c39.826 0 83.1 74.988 101.902 187.459-32.351 4.809-66.474 7.709-101.902 7.709s-69.551-2.9-101.902-7.709c18.801-112.471 62.075-187.459 101.902-187.459zm164.066 232.134c45.409-11.052 85.726-26.374 117.948-45.9 15.853 36.886 24.738 77.614 24.738 120.389s-8.797 83.471-24.738 120.437c-32.222-19.478-72.596-34.977-117.948-45.9 2.175-23.876 3.262-48.848 3.262-74.586s-1.087-50.476-3.262-74.408zm91.26-95.07c-26.188 16.361-59.852 29.813-98.51 39.609-10.69-63.936-29.137-118.222-53.198-158.314 62.349 22.515 115.499 64.387 151.709 118.673zM304.191 196.603c-24.062 40.06-42.509 94.346-53.198 158.314-38.69-9.828-72.322-23.248-98.51-39.609 36.209-54.286 89.359-96.158 151.709-118.673zM152.482 654.661c26.188-16.401 59.852-29.821 98.51-39.649 10.69 63.936 29.137 118.222 53.198 158.322-62.349-22.563-115.499-64.436-151.709-118.673zm358.879 118.673c24.062-40.1 42.509-94.386 53.198-158.322 38.69 9.828 72.322 23.248 98.51 39.649-36.209 54.237-89.359 96.11-151.709 118.673z\"/></svg>",
 	mic: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M409.618 681.692c114.138 0 206.667-92.529 206.667-206.667V309.692c0-114.138-92.529-206.667-206.667-206.667s-206.667 92.529-206.667 206.667v165.333c0 114.138 92.529 206.667 206.667 206.667z\"/><path d=\"M368.285 844.589v85.104h82.667v-85.104c185.707-20.667 330.667-178.44 330.667-369.563v-82.667h-82.667v82.667c0 159.547-129.83 289.333-289.333 289.333S120.286 634.572 120.286 475.026v-82.667H37.619v82.667c0 191.124 144.96 348.94 330.667 369.563z\"/></svg>",
-	play: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M213.308 275.971c0-29.549 23.948-53.504 53.497-53.504 9.185 0 14.999 2.398 25.225 6.47L667.289 447.27c17.454 10.348 25.533 26.969 28.647 46.117v5.376c-3.122 19.144-11.203 35.769-28.647 46.117L292.038 763.205c-10.245 4.08-16.055 6.462-25.225 6.462-29.549 0-53.497-23.955-53.497-53.504V275.952z\"/></svg>",
-	pause: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M147.01 267.438c0-29.495 23.924-53.417 53.432-53.417h112.295c29.495 0 53.432 23.924 53.432 53.417v424.358c0 29.505-23.924 53.425-53.432 53.425H200.442c-29.495 0-53.432-23.924-53.432-53.425V267.438zM452.99 267.438c0-29.495 23.924-53.417 53.399-53.417h112.302c29.495 0 53.409 23.924 53.409 53.417v424.358c0 29.505-23.912 53.425-53.409 53.425H506.389c-29.49 0-53.409-23.924-53.409-53.425V267.438z\"/></svg>",
-	stop: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M151.962 291.772c0-32.96 26.713-59.665 59.673-59.665H607.49c32.96 0 59.673 26.713 59.673 59.665v395.863c0 32.96-26.713 59.673-59.673 59.673H211.635c-32.96 0-59.673-26.714-59.673-59.673V291.772z\"/></svg>",
+	play: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M213.308 291.971c0-29.549 23.948-53.504 53.497-53.504 9.185 0 14.999 2.398 25.225 6.47l375.259 218.333c17.454 10.348 25.533 26.969 28.647 46.117v5.376c-3.122 19.144-11.203 35.769-28.647 46.117l-375.251 218.325c-10.245 4.080-16.055 6.462-25.225 6.462-29.549 0-53.497-23.955-53.497-53.504v-440.211z\"></path>\n</svg>\n",
+	pause: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M147.010 283.438c0-29.495 23.924-53.417 53.432-53.417h112.295c29.495 0 53.432 23.924 53.432 53.417v424.358c0 29.505-23.924 53.425-53.432 53.425h-112.295c-29.495 0-53.432-23.924-53.432-53.425v-424.358z\"></path>\n<path d=\"M452.99 283.438c0-29.495 23.924-53.417 53.399-53.417h112.302c29.495 0 53.409 23.924 53.409 53.417v424.358c0 29.505-23.912 53.425-53.409 53.425h-112.302c-29.49 0-53.409-23.924-53.409-53.425v-424.358z\"></path>\n</svg>\n",
+	stop: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M151.962 307.772c0-32.96 26.713-59.665 59.673-59.665h395.855c32.96 0 59.673 26.713 59.673 59.665v395.863c0 32.96-26.713 59.673-59.673 59.673h-395.855c-32.96 0-59.673-26.714-59.673-59.673v-395.863z\"></path>\n</svg>\n",
 	eject: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M507.094 814.755c13.33 0 26.618-5.179 36.834-15.395l136.231-136.030c13.976-14.827 24.43-44.527 0-73.668l-136.231-136.231c-20.431-20.431-53.239-20.431-73.668 0s-20.431 53.435 0 73.859l46.967 46.967h-208.92v-268.557c0-28.885-23.142-52.229-52.046-52.229s-52.229 23.35-52.229 52.229v320.792c0 28.885 23.35 52.046 52.229 52.046h261.155l-47.17 47.17c-20.431 20.431-20.431 53.239 0 73.668 10.216 10.216 23.504 15.395 36.834 15.395z\"></path>\n</svg>\n",
 	settings: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\"><path d=\"M195.945 218.371h452.727c35.966 0 64.683 28.663 64.683 64.104 0 35.449-28.717 63.734-64.683 63.734H195.945c-35.587 0-64.683-28.285-64.683-63.734s29.082-64.104 64.683-64.104zM197.089 431.455h452.727c35.587 0 64.683 28.286 64.683 63.726 0 35.449-29.088 64.129-64.683 64.129H197.089c-35.968 0-64.675-28.67-64.675-64.129 0-35.449 28.705-63.726 64.675-63.726zM196.324 644.158h452.727c35.966 0 64.683 28.663 64.683 64.1 0 35.068-28.717 63.754-64.683 63.754H196.324c-35.968 0-64.675-28.682-64.675-63.754 0-35.439 28.705-64.1 64.675-64.1z\"/></svg>",
 	github: "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"784\" height=\"1024\" viewBox=\"0 0 784 1024\"><path d=\"M4.168 480.005q0 107.053 52.114 194.314 52.114 90.085 141.399 141.799t194.314 51.714q105.441 0 195.126-51.714 89.685-52.114 141.199-141.599t51.514-194.514q0-106.652-51.714-195.126-52.114-89.685-141.599-141.199T392.007 92.166q-107.053 0-194.314 52.114-90.085 52.114-141.799 141.399T4.18 479.993zm64.634 0q0-64.634 25.451-124.832t69.482-103.828q44.031-44.031 103.828-69.282t124.432-25.251 124.832 25.251 104.229 69.282q43.631 43.631 68.882 103.828t25.251 124.832q0 69.482-28.487 132.504t-79.989 108.876-117.76 66.458V673.919q0-42.419-34.747-66.257 85.238-7.672 124.632-43.23t39.383-112.712q0-59.786-36.759-100.593 7.272-21.815 7.272-42.018 0-29.899-13.732-54.939-27.063 0-48.478 8.884t-52.515 30.699q-37.571-8.484-77.565-8.484-45.654 0-85.238 9.295-30.299-22.216-52.314-31.311t-49.891-9.084q-13.332 25.451-13.332 54.939 0 21.004 6.871 42.419-36.759 39.594-36.759 100.192 0 77.165 39.183 112.312t125.644 43.23q-23.027 15.355-31.911 44.843-19.792 6.871-41.207 6.871-16.156 0-27.875-7.272-3.636-2.024-6.66-4.236t-6.26-5.448-5.248-5.048-5.248-6.26-4.236-5.659-4.848-6.46-4.236-5.659q-18.991-25.051-45.243-25.051-14.143 0-14.143 6.06 0 2.424 6.871 8.083 12.931 11.308 13.732 12.12 9.696 7.672 10.908 9.696 11.719 14.544 17.779 31.911 22.627 50.502 77.565 50.502 8.884 0 34.747-4.036v85.649q-66.257-20.603-117.76-66.458T97.346 612.533 68.859 480.029z\"/></svg>",
 	sine: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M1547.794 814.654c-130.636 0-191.603-153.85-249.651-301.917-52.266-130.636-104.503-264.163-197.414-264.163s-145.148 133.527-197.414 264.163c-58.048 148.039-119.015 301.917-249.651 301.917s-191.603-153.85-249.651-301.917c-52.266-130.636-104.503-264.163-197.414-264.163s-145.148 133.527-197.414 264.163c-58.048 148.039-119.015 301.917-249.651 301.917s-191.603-153.85-249.651-301.917c-52.266-130.636-104.503-264.163-197.414-264.163-17.403 0-29.024-11.621-29.024-29.024s11.621-29.024 29.024-29.024c130.636 0 191.603 153.85 249.651 301.917 52.266 130.636 104.503 264.163 197.414 264.163s145.148-133.527 197.414-264.163c58.048-148.039 119.015-301.917 249.651-301.917s191.603 153.85 249.651 301.917c52.266 130.636 104.503 264.163 197.414 264.163s145.148-133.527 197.414-264.163c58.048-148.039 119.015-301.917 249.651-301.917s191.603 153.85 249.651 301.917c52.266 130.636 104.503 264.163 197.414 264.163 17.403 0 29.024 11.621 29.024 29.024s-11.621 29.024-29.024 29.024z\"></path>\n</svg>\n",
-	saw: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M769.208 822.877v-513.41l-770.128 513.41v-513.41l-729.071 485.185-30.812-41.083 811.211-541.661v513.41l770.128-513.41v513.41l729.071-485.185 30.812 41.083z\"></path>\n</svg>\n",
-	rectangle: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M1563.904 793.528h-410.336v-512.92h-333.416v512.92h-436v-512.92h-333.416v512.92h-436v-512.92h-359.056v-51.304h410.336v512.92h333.416v-512.92h436v512.92h333.416v-512.92h436v512.92h359.056z\"></path>\n</svg>\n",
+	sawtooth: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M769.208 822.877v-513.41l-770.128 513.41v-513.41l-729.071 485.185-30.812-41.083 811.211-541.661v513.41l770.128-513.41v513.41l729.071-485.185 30.812 41.083z\"></path>\n</svg>\n",
+	square: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M1563.904 793.528h-410.336v-512.92h-333.416v512.92h-436v-512.92h-333.416v512.92h-436v-512.92h-359.056v-51.304h410.336v512.92h333.416v-512.92h436v512.92h333.416v-512.92h436v512.92h359.056z\"></path>\n</svg>\n",
 	triangle: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M859.424 854.833l-451.1-601.44-451.1 601.44-475.162-634.543 48.115-36.070 427.014 568.365 451.1-601.44 451.1 601.44 451.1-601.44 475.162 634.543-48.115 36.070-427.014-568.365z\"></path>\n</svg>\n",
 	noise: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M51.2 608.387c-18.876 0-34.133-15.292-34.133-34.133v-170.667c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v170.667c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M153.6 744.92c-18.876 0-34.133-15.292-34.133-34.133v-443.734c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v443.734c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M256 881.453c-18.876 0-34.133-15.292-34.133-34.133v-716.8c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v716.8c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M358.4 847.32c-18.876 0-34.133-15.292-34.133-34.133v-648.533c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v648.533c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M460.798 710.787c-18.876 0-34.133-15.292-34.133-34.133v-375.467c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v375.467c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M563.202 847.32c-18.876 0-34.133-15.292-34.133-34.133v-648.533c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v648.533c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M665.6 710.787c-18.876 0-34.133-15.292-34.133-34.133v-375.467c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v375.467c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n<path d=\"M768 608.387c-18.876 0-34.133-15.292-34.133-34.133v-170.667c0-18.842 15.258-34.133 34.133-34.133s34.133 15.292 34.133 34.133v170.667c0 18.842-15.258 34.133-34.133 34.133z\"></path>\n</svg>\n",
 	whitenoise: "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!-- Generated by IcoMoon.io -->\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"819\" height=\"1024\" viewBox=\"0 0 819 1024\">\n<g id=\"icomoon-ignore\">\n</g>\n<path d=\"M101.43 276.225c52.513 0 52.513-81.44 0-81.44s-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M333.095 396.461c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M191.809 554.044c52.513 0 52.513-81.44 0-81.44s-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M416.842 520.56c52.513 0 52.513-81.44 0-81.44-52.515 0-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M293.704 643.45c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M270.57 266.116c52.513 0 52.513-81.44 0-81.44s-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M584.308 709.96c52.513 0 52.513-81.44 0-81.44-52.515 0-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M217.083 735.989c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M509.134 822.72c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M191.809 376.22c52.513 0 52.513-81.44 0-81.44s-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M355.873 828.51c52.513 0 52.513-81.44 0-81.44-52.515 0-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M658.033 276.225c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M530.801 335.5c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M741.89 355.741c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M754.895 520.56c52.513 0 52.513-81.44 0-81.44-52.515 0-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M575.624 513.344c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M738.996 777.897c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M721.649 659.35c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M78.295 679.59c52.513 0 52.513-81.44 0-81.44s-52.515 81.44 0 81.44v0z\"></path>\n<path d=\"M108.645 824.169c52.513 0 52.513-81.44 0-81.44s-52.513 81.44 0 81.44v0z\"></path>\n<path d=\"M416.842 671.691c52.513 0 52.513-81.44 0-81.44-52.515 0-52.515 81.44 0 81.44v0z\"></path>\n</svg>\n"
@@ -734,13 +746,14 @@ AppAudio.prototype.init = function init (opts) {
 	extend(this, opts);
 
 	//queue
-	this.queue = [];
-	this.current = null;
+	this.currentSource = null;
+	this.nextSources = [];
+	this.recentSources = [];
+	this.recentTitles = [];
 
 	//audio
 	this.gainNode = this.context.createGain();
 	this.gainNode.connect(this.context.destination);
-
 
 	//UI
 	//ensure container
@@ -753,12 +766,13 @@ AppAudio.prototype.init = function init (opts) {
 	this.container.appendChild(this.element);
 
 	//create layout
-	this.element.innerHTML = "\n\t\t<label for=\"aa-dropdown-toggle\" class=\"aa-content\">\n\t\t\t<i class=\"aa-icon\">" + (this.icons.eject) + "</i>\n\t\t\t<input class=\"aa-input\" value=\"Select source\" readonly/>\n\t\t</label>\n\t\t<a href=\"#playback\" class=\"aa-button\"><i class=\"aa-icon\"></i></a>\n\t";
+	this.element.innerHTML = "\n\t\t<label for=\"aa-dropdown-toggle\" class=\"aa-content\">\n\t\t\t<i class=\"aa-icon\">" + (this.icons.eject) + "</i>\n\t\t\t<input class=\"aa-input\" value=\"\" readonly/>\n\t\t</label>\n\t\t<a href=\"#playback\" class=\"aa-button aa-button-play\" hidden><i class=\"aa-icon\"></i></a>\n\t\t<a href=\"#next\" class=\"aa-button aa-button-next\" hidden><i class=\"aa-icon\">" + (this.icons.next) + "</i></a>\n\t";
 	this.iconEl = this.element.querySelector('.aa-icon');
 	this.contentEl = this.element.querySelector('.aa-content');
 	this.inputEl = this.element.querySelector('.aa-input');
-	this.buttonEl = this.element.querySelector('.aa-button');
+	this.buttonEl = this.element.querySelector('.aa-button-play');
 	this.playEl = this.buttonEl.querySelector('.aa-icon');
+	this.nextButtonEl = this.element.querySelector('.aa-button-next');
 
 	this.contentEl.addEventListener('click', function () {
 		if (this$1.dropdownEl.hasAttribute('hidden')) {
@@ -773,7 +787,7 @@ AppAudio.prototype.init = function init (opts) {
 	this.dropdownEl = document.createElement('div');
 	this.dropdownEl.className = 'aa-dropdown';
 	this.dropdownEl.setAttribute('hidden', true);
-	this.dropdownEl.innerHTML = "\n\t\t<ul class=\"aa-items\">\n\t\t<li class=\"aa-item aa-file\"><i class=\"aa-icon\">" + (this.icons.open) + "</i> File\n\t\t<input class=\"aa-file-input\" type=\"file\" multiple/></li>\n\t\t<li class=\"aa-item aa-soundcloud\"><i class=\"aa-icon\">" + (this.icons.soundcloud) + "</i> Soundcloud</li>\n\t\t<li class=\"aa-item aa-url\"><i class=\"aa-icon\">" + (this.icons.url) + "</i> URL</li>\n\t\t<li class=\"aa-item aa-mic\"><i class=\"aa-icon\">" + (this.icons.mic) + "</i> Microphone</li>\n\t\t</ul>\n\t\t<ul class=\"aa-items aa-signal\" data-title=\"Signal\">\n\t\t\t<li class=\"aa-item aa-item-short\" title=\"Sine\"><i class=\"aa-icon\">" + (this.icons.sine) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-short\" title=\"Sawtooth\"><i class=\"aa-icon\">" + (this.icons.saw) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-short\" title=\"Triangle\"><i class=\"aa-icon\">" + (this.icons.triangle) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-short\" title=\"Rectangle\"><i class=\"aa-icon\">" + (this.icons.rectangle) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-short\" title=\"White noise\"><i class=\"aa-icon\">" + (this.icons.whitenoise) + "</i></li>\n\t\t</ul>\n\t\t<ul class=\"aa-items aa-recent\" data-title=\"Recent\" hidden>\n\t\t<li class=\"aa-item\"><i class=\"aa-icon\">" + (this.icons.record) + "</i> A.mp4</li>\n\t\t</ul>\n\t";
+	this.dropdownEl.innerHTML = "\n\t\t<ul class=\"aa-items\">\n\t\t<li class=\"aa-item aa-file\"><i class=\"aa-icon\">" + (this.icons.open) + "</i> File\n\t\t<input class=\"aa-file-input\" type=\"file\" multiple/></li>\n\t\t<li class=\"aa-item aa-soundcloud\"><i class=\"aa-icon\">" + (this.icons.soundcloud) + "</i> Soundcloud</li>\n\t\t<li class=\"aa-item aa-url\"><i class=\"aa-icon\">" + (this.icons.url) + "</i> URL</li>\n\t\t<li class=\"aa-item aa-mic\"><i class=\"aa-icon\">" + (this.icons.mic) + "</i> Microphone</li>\n\t\t</ul>\n\t\t<ul class=\"aa-items aa-signal\" data-title=\"Signal\">\n\t\t\t<li class=\"aa-item aa-item-signal\" title=\"Sine\" data-source=\"sine\"><i class=\"aa-icon\">" + (this.icons.sine) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-signal\" title=\"Sawtooth\" data-source=\"sawtooth\"><i class=\"aa-icon\">" + (this.icons.sawtooth) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-signal\" title=\"Triangle\" data-source=\"triangle\"><i class=\"aa-icon\">" + (this.icons.triangle) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-signal\" title=\"Rectangle\" data-source=\"square\"><i class=\"aa-icon\">" + (this.icons.square) + "</i></li>\n\t\t\t<li class=\"aa-item aa-item-signal\" title=\"White noise\" data-source=\"whitenoise\"><i class=\"aa-icon\">" + (this.icons.whitenoise) + "</i></li>\n\t\t</ul>\n\t\t<ul class=\"aa-items aa-next\" data-title=\"Next\" hidden></ul>\n\t\t<ul class=\"aa-items aa-recent\" data-title=\"Recent\" hidden></ul>\n\t";
 	this.fileEl = this.dropdownEl.querySelector('.aa-file');
 	this.urlEl = this.dropdownEl.querySelector('.aa-url');
 	this.soundcloudEl = this.dropdownEl.querySelector('.aa-soundcloud');
@@ -781,10 +795,11 @@ AppAudio.prototype.init = function init (opts) {
 	this.noiseEl = this.dropdownEl.querySelector('.aa-noise');
 	this.signalEl = this.dropdownEl.querySelector('.aa-signal');
 	this.recentEl = this.dropdownEl.querySelector('.aa-recent');
+	this.nextEl = this.dropdownEl.querySelector('.aa-next');
 	this.element.appendChild(this.dropdownEl);
 
 	//init playpayse
-	this.playEl.addEventListener('click', function (e) {
+	this.buttonEl.addEventListener('click', function (e) {
 		e.preventDefault();
 
 		if (this$1.isPaused) {
@@ -795,10 +810,64 @@ AppAudio.prototype.init = function init (opts) {
 		}
 	});
 
+	//init next
+	this.nextButtonEl.addEventListener('click', function (e) {
+		e.preventDefault();
+		this$1.playNext();
+	});
+
+	//init input
+	this.inputEl.addEventListener('input', function (e) {
+		this$1.testEl.innerHTML = this$1.inputEl.value;
+		this$1.inputEl.style.width = parseInt(getComputedStyle(this$1.testEl).width) + 5 + 'px';
+	});
+
+	//init soundcloud
+	this.soundcloudEl.addEventListener('click', function (e) {
+		this$1.inputEl.focus();
+		this$1.info('https://', this$1.icons.soundcloud);
+		this$1.inputEl.removeAttribute('readonly');
+		this$1.buttonEl.setAttribute('hidden', true);
+		this$1.inputEl.select();
+	});
+
+	//init url
+	this.urlEl.addEventListener('click', function (e) {
+		this$1.inputEl.focus();
+		this$1.info('https://', this$1.icons.url);
+		this$1.inputEl.removeAttribute('readonly');
+		this$1.buttonEl.setAttribute('hidden', true);
+		this$1.inputEl.select();
+	});
+	this.inputEl.addEventListener('focus', function (e) {
+		this$1.saveState();
+		this$1.contentEl.classList.add('aa-focus');
+	});
+	this.inputEl.addEventListener('keypress', function (e) {
+		if (e.which === 13) {
+			this$1.inputEl.blur();
+			//FIXME: do we need this call? when? when no change happened?
+			// this.inputEl.dispatchEvent(new Event('change'));
+		}
+	});
+	this.inputEl.addEventListener('blur', function (e) {
+		this$1.inputEl.setAttribute('readonly', true);
+		this$1.contentEl.classList.remove('aa-focus');
+		this$1.restoreState();
+	});
+	this.inputEl.addEventListener('change', function (e) {
+		e.preventDefault();
+		var value = this$1.inputEl.value;
+		//to be called after blur
+		setTimeout(function () {
+			this$1.set(value);
+		});
+	});
+
 	//init file
 	this.fileInputEl = this.dropdownEl.querySelector('.aa-file-input');
 	this.fileInputEl.addEventListener('change', function (e) {
-		this$1.setSource(this$1.fileInputEl.files);
+		this$1.set(this$1.fileInputEl.files);
 	});
 
 	//init mic
@@ -811,46 +880,80 @@ AppAudio.prototype.init = function init (opts) {
 
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({audio: true, video: false})
-			.then(enableMic).catch(function (e) { return this$1.error(e); });
+			.then(function (stream) { return this$1.set(stream); }).catch(function (e) { return this$1.error(e); });
 		}
 		else {
 			try {
 				navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia);
-				navigator.getUserMedia({audio: true, video: false}, enableMic, function (e) { return this$1.error(e); });
+				navigator.getUserMedia({audio: true, video: false}, function (stream) { return this$1.set(stream); }, function (e) { return this$1.error(e); });
 			} catch (e) {
 				this$1.error(e);
 			}
 		}
-
-		function enableMic(stream) {
-			that.info('Microphone', that.icons.mic);
-
-			//an alternative way to start media stream
-			//does not work in chrome, so we just pass url to callback
-			var streamUrl = URL.createObjectURL(stream);
-			// that.audio.src = streamUrl;
-
-			//create media stream source node
-			if (!that.micNode) {
-				that.micNode = that.context.createMediaStreamSource(stream);
-				that.micNode.connect(that.gainNode);
-			}
-			that.autoplay && that.play();
-
-			that.emit('source', that.micNode, streamUrl);
-		}
 	});
 
-	//create progress
+	//init recent
+	this.recentEl.addEventListener('click', function (e) {
+		var target = e.target.closest('.aa-item');
+		if (!target) return;
+		var src = target.getAttribute('data-source');
+		this$1.set(src);
+	});
+
+	//init next list
+	this.nextEl.addEventListener('click', function (e) {
+		var target = e.target.closest('.aa-item');
+		if (!target) return;
+		var src = target.getAttribute('data-source');
+		this$1.set(src);
+	});
+
+	//init signal
+	this.signalEl.addEventListener('click', function (e) {
+		var target = e.target.closest('.aa-item');
+		if (!target) return;
+		var src = target.getAttribute('data-source');
+		this$1.set(src);
+	});
+
+	//init progress
 	this.progressEl = document.createElement('div');
 	this.progressEl.className = 'aa-progress';
 	this.container.appendChild(this.progressEl);
+	this.progressEl.style.width = 0;
+
+	setInterval(function () {
+		var currentTime = this$1.player && this$1.player.currentTime || this$1.player && this$1.player.element && this$1.player.element.currentTime || 0;
+
+		if (currentTime) {
+			this$1.progressEl.style.width = ((currentTime / this$1.player.duration * 100) || 0) + '%';
+			this$1.progressEl.setAttribute('title', ((formatTime(currentTime)) + " / " + (formatTime(this$1.player.duration)) + " played"));
+		}
+		else {
+			this$1.progressEl.style.width = 0;
+		}
+	}, 200);
+	function formatTime (time) {
+		return pad((time / 60)|0, 2, 0) + ':' + pad((time % 60)|0, 2, 0);
+	}
 
 	//create drag n drop
 	if (this.dragAndDrop) {
 		var count = 0;
 		var title;
 		var that = this;
+
+		var dragleave = function (e) {
+			count--;
+
+			//non-zero count means were still inside
+			if (count) return;
+
+			count = 0;
+			that.container.removeEventListener('dragleave', dragleave);
+			that.container.classList.remove('aa-dragover');
+			that.restoreState();
+		}
 
 		this.dropEl = document.createElement('div');
 		this.dropEl.className = 'aa-drop';
@@ -871,15 +974,10 @@ AppAudio.prototype.init = function init (opts) {
 			dragleave(e);
 
 			var dt = e.dataTransfer;
-			// that.setSource(dt.files, () => {
-				//that.restoreState();
-			// });
+			that.set(dt.files);
 		}, false);
 
-		this.container.addEventListener('dragenter', dragenter);
-
-
-		function dragenter (e) {
+		this.container.addEventListener('dragenter', function (e) {
 			count++;
 
 			if (count > 1) return;
@@ -891,115 +989,449 @@ AppAudio.prototype.init = function init (opts) {
 			var items = e.dataTransfer.items;
 
 			that.saveState();
-			console.log(items.length)
 			that.info(items.length < 2 ? "Drop audio file" : "Drop audio files", that.icons.record);
-		}
-		function dragleave (e) {
-			count--;
-
-			//non-zero count means were still inside
-			if (count) return;
-
-			count = 0;
-			that.container.removeEventListener('dragleave', dragleave);
-			that.container.classList.remove('aa-dragover');
-			that.restoreState();
-		}
+		});
 	}
 
-	this.update(opts);
+	//hack to set input element width
+	var style = getComputedStyle(this.inputEl);
+	this.testEl = document.createElement('div');
+	this.testEl.style.fontFamily = style.fontFamily;
+	this.testEl.style.fontSize = style.fontSize;
+	this.testEl.style.letterSpacing = style.letterSpacing;
+	this.testEl.style.textTransform = style.textTransform;
+	this.testEl.style.fontWeight = style.fontWeight;
+	this.testEl.style.fontStyle = style.fontStyle;
+	this.testEl.style.padding = style.padding;
+	this.testEl.style.margin = style.margin;
+	this.testEl.style.border = style.border;
+
+	this.testEl.style.whiteSpace = 'pre';
+	this.testEl.style.position = 'fixed';
+	this.testEl.style.top = '-1000px';
+	this.testEl.style.left = '-1000px';
+
+	this.container.appendChild(this.testEl);
+
+	this.reset();
+
+	//load last source
+	if (this.save) {
+		this.loadSources();
+	}
+
+	//load predefined source
+	else if (this.source) {
+		this.set(this.source);
+	}
+
+	this.update();
+
+	return this;
 };
 
 //keep app state updated
 AppAudio.prototype.update = function update (opts) {
+	var this$1 = this;
+
 	extend(this, opts);
 
 	//hide/unhide proper elements
 	this.icon ? this.iconEl.removeAttribute('hidden') : this.iconEl.setAttribute('hidden', true);
-	this.play ? this.buttonEl.removeAttribute('hidden') : this.buttonEl.setAttribute('hidden', true);
+	this.progress ? this.progressEl.removeAttribute('hidden') : this.progressEl.setAttribute('hidden', true);
 	this.file ? this.fileEl.removeAttribute('hidden') : this.fileEl.setAttribute('hidden', true);
 	this.url ? this.urlEl.removeAttribute('hidden') : this.urlEl.setAttribute('hidden', true);
 	this.signal ? this.signalEl.removeAttribute('hidden') : this.signalEl.setAttribute('hidden', true);
 	this.mic ? this.micEl.removeAttribute('hidden') : this.micEl.setAttribute('hidden', true);
 	this.soundcloud ? this.soundcloudEl.removeAttribute('hidden') : this.soundcloudEl.setAttribute('hidden', true);
-	this.recent ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
+	this.recent && this.recentSources.length ? this.recentEl.removeAttribute('hidden') : this.recentEl.setAttribute('hidden', true);
+	if (this.next) {
+		if (this.nextSources.length) {
+			this.nextEl.removeAttribute('hidden');
+			this.nextButtonEl.removeAttribute('hidden');
+		} else {
+			this.nextEl.setAttribute('hidden', true);
+			this.nextButtonEl.setAttribute('hidden', true);
+		}
+	}
 
 	//apply color
 	this.element.style.color = this.color;
 	this.progressEl.style.color = this.color;
-	this.dropEl.style.color = this.color;
+	if (this.dragAndDrop) this.dropEl.style.color = this.color;
+
+	//update width
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
+
+	//update recent list
+	this.recentEl.innerHTML = '';
+	if (this.recent) {
+		var html = "";
+		this.recentSources.forEach(function (src, i) {
+			html += "<li class=\"aa-item aa-recent-item\" title=\"" + (this$1.recentTitles[i]) + "\" data-source=\"" + src + "\">" + (this$1.recentTitles[i]) + "</li>"
+		});
+		this.recentEl.innerHTML = html;
+	}
+
+	//update next list
+	this.nextEl.innerHTML = '';
+	if (this.next) {
+		var html$1 = "";
+		this.nextSources.forEach(function (src) {
+			html$1 += "<li class=\"aa-item aa-next-item\" title=\"" + (src.name || src) + "\" data-source=\"" + src + "\">" + (src.name || src) + "</li>"
+		});
+		this.nextEl.innerHTML = html$1;
+	}
 
 	return this;
 };
 
 
 //set current source to play
-AppAudio.prototype.setSource = function (src) {
+AppAudio.prototype.set = function (src) {
 	var this$1 = this;
+
+	var that = this;
 
 	//undefined source does not change current state
 	if (!src) return this;
 
-	//list of sources to enqueue
-	var list = [];
+	//ignore not changed source
+	if (src === this.currentSource) return this;
+
+	//detect mic source, duck typing
+	if (src.active != null && src.id && src.addTrack) {
+		//ignore active mic already
+		if (this.micNode) return this;
+
+		this.reset();
+
+		this.info('Microphone', this.icons.mic);
+
+		//an alternative way to start media stream
+		//does not work in chrome, so we just pass url to callback
+		this.currentSource = URL.createObjectURL(src);
+		// this.audio.src = streamUrl;
+
+		//create media stream source node
+		this.micNode = this.context.createMediaStreamSource(src);
+		this.micNode.connect(this.gainNode);
+
+		this.autoplay ? this.play() : this.pause();
+
+		this.emit('source', this.micNode, this.currentSource);
+
+		return this;
+	}
+
+	//list of sources should all be added to next
+	if (Array.isArray(src)) {
+		this.nextSources = src.slice(1);
+		this.set(src[0]);
+		return this;
+	}
 
 	//list of files enqueues all audio files to play
 	if (src instanceof FileList) {
-		var list$1 = src;
+		var list = [];
 
-		for (var i = 0; i < list$1.length; i++) {
-			if (/audio/.test(list$1[i].type)) {
-				list$1.push(list$1[i]);
+		for (var i = 0; i < src.length; i++) {
+			if (/audio/.test(src[i].type)) {
+				list.push(src[i]);
 			}
 		}
 
-		if (!list$1.length) {
-			src.length === 1 ? this.error('Not an audio') : this.error('No audio within selected files');
+		if (!list.length) {
+			src.length === 1 ? this.error('Not an audio') : this.error('No audio source');
 			return this;
 		}
+
+		this.nextSources = list.slice(1);
+
+		return this.set(list[0]);
 	}
 
 	//single file instance
 	if (src instanceof File) {
 		var url = URL.createObjectURL(src);
+		this.saveState();
 
-		this.info(src.name, this.icons.record);
-		this.playQueue = [url];
-
-		this.reset();
-		this.player = new Player(url, {
+		var player = new Player(url, {
 			context: this.context,
 			loop: this.loop,
-			buffer: isMobile,
 			crossOrigin: 'Anonymous'
-		})
-		.on('load', function (e) {
-			this$1.play && this$1.audioEl.removeAttribute('hidden');
-			this$1.emit('source', this$1.player.node, url);
-			this$1.autoplay && this$1.play();
-		})
-		.on('error', function (e) { return this$1.error(e); })
-		.on('ended', function (e) {
-			this$1.next();
+		}).on('load', function (e) {
+			this$1.reset();
+
+			this$1.info(src.name, this$1.icons.record);
+			this$1.player = player;
+
+			this$1.currentSource = src;
+			this$1.update();
+
+			this$1.player.node.connect(this$1.gainNode);
+
+			this$1.autoplay ? this$1.play() : this$1.pause();
+
+			this$1.emit('source', this$1.player.node, src);
+		}).on('error', function (err) {
+			this$1.restoreState();
+			this$1.error(err);
+		}).on('end', function () {
+			this$1.playNext();
 		});
 
 	}
 
-	//FIXME: url
+	//soundcloud
+	//FIXME: recognize straight stream API url
+	else if (/soundcloud/.test(src)) {
+		this.saveState();
+
+		this.info('Connecting to soundcloud', this.icons.loading);
+		var token = this.token.soundcloud || this.token;
+
+		if (!isMobile) {
+			xhr({
+				uri: ("https://api.soundcloud.com/resolve.json?client_id=" + token + "&url=" + src),
+				method: 'GET'
+			}, function (err, response) {
+				if (err) {
+					this$1.restoreState();
+					return this$1.error(err);
+				}
+
+				var json = JSON.parse(response.body);
+
+				setSoundcloud(json, token);
+			});
+			return this;
+		}
+
+		//mobile soundcloud has a bit more specific routine
+		else {
+			xhr({
+				uri: ("https://api.soundcloud.com/resolve.json?client_id=" + token + "&url=" + src + "&format=json"),
+				method: 'GET'
+			}, function () {
+				xhr({
+					uri: ("https://api.soundcloud.com/resolve.json?client_id=" + token + "&url=" + src + "&_status_code_map[302]=200&format=json"),
+					method: 'GET'
+				}, function (err, response) {
+					if (err) {
+						this.restoreState();
+						return this.error(err, cb);
+					}
+
+					var obj = JSON.parse(response.body);
+					xhr({
+						uri: obj.location,
+						method: 'GET'
+					}, function (err, response) {
+						if (err) {
+							this.restoreState();
+							return this.error(err, cb);
+						}
+
+						var json = JSON.parse(response.body);
+
+						setSoundcloud(json, token);
+					});
+				});
+			});
+		}
+
+		return this;
+	}
+
+	//signal nodes
+	else if (/sin|tri|saw|rect|squ/.test(src)) {
+		this.reset();
+
+		this.oscNode = this.context.createOscillator();
+		this.oscNode.type = /sin/.test(src) ? 'sine' : /tri/.test(src) ? 'triangle' : /rect|squ/.test(src) ? 'square' : 'sawtooth';
+		this.oscNode.frequency.value = 440;
+		this.oscNode.start();
+
+		this.currentSource = src;
+		this.save && this.saveSources();
+		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
+		this.oscNode.connect(this.gainNode);
+		this.autoplay ? this.play() : this.pause();
+		this.emit('source', this.oscNode, src);
+
+	}
+	else if (/noise/.test(src)) {
+		this.reset();
+		var buffer = this.context.createBuffer(2, 44100*2, this.context.sampleRate);
+		for (var channel = 0; channel < 2; channel++){
+			var data = buffer.getChannelData(channel);
+			for (var i$1 = 0; i$1 < 44100*2; i$1++) {
+				data[i$1] = Math.random() * 2 - 1;
+			}
+		}
+		this.bufNode = this.context.createBufferSource();
+		this.bufNode.buffer = buffer;
+		this.bufNode.loop = true;
+		this.bufNode.start();
+
+		this.currentSource = src;
+		this.save && this.saveSources();
+		this.info('Noise', this.icons.noise);
+		this.bufNode.connect(this.gainNode);
+		this.autoplay ? this.play() : this.pause();
+		this.emit('source', this.bufNode, src);
+	}
+
+	//url
+	else if (typeof src === 'string') {
+		if (!isUrl(src) && src[0] != '.' && src[0] != '/') {
+			this.error('Bad URL');
+			return this;
+		}
+
+		this.saveState();
+		this.info(("Loading " + src), this.icons.loading);
+
+		var player$1 = new Player(src, {
+			context: this.context,
+			loop: this.loop,
+			buffer: isMobile, //FIXME: this can be always false here i guess
+			crossOrigin: 'Anonymous'
+		}).on('load', function () {
+			this$1.reset();
+
+			this$1.player = player$1;
+			this$1.currentSource = src;
+			this$1.addRecent(src, src);
+			this$1.save && this$1.saveSources();
+			this$1.update();
+
+			this$1.info(src, this$1.icons.url);
+			this$1.player.node.connect(this$1.gainNode);
+			this$1.autoplay ? this$1.play() : this$1.pause();
+			this$1.emit('source', this$1.player.node, src);
+		}).on('error', function (err) {
+			this$1.restoreState();
+			this$1.error(err);
+		}).on('end', function () {
+			this$1.playNext();
+		});
+	}
+
+	function setSoundcloud (json) {
+		var token = that.token.soundcloud || that.token;
+
+		var streamUrl = json.stream_url + '?client_id=' + token;
+
+		//if list of tracks - setup first, save others for next
+		if (json.tracks) {
+			that.nextSources = json.tracks.slice(1).map(function (t) { return t.permalink_url; });
+			// that.addRecent(json.title, json.permalink_url);
+			return that.set(json.tracks[0].permalink_url);
+		}
+
+		var titleHtml = json.title;
+		if (json.user) {
+			titleHtml += " by " + (json.user.username);
+		}
+
+		var player = new Player(streamUrl, {
+			context: that.context,
+			loop: that.loop,
+			buffer: !isMobile,
+			crossOrigin: 'Anonymous'
+		}).on('decoding', function () {
+			that.info(("Decoding " + titleHtml), that.icons.loading);
+		}).on('progress', function (e) {
+			if (e === 0) return;
+			that.info(("Loading " + titleHtml), that.icons.loading)
+		}).on('load', function () {
+			that.reset();
+
+			that.player = player;
+
+			that.currentSource = src;
+
+			that.addRecent(titleHtml, src);
+			that.save && that.saveSources();
+			that.update();
+
+			that.info(titleHtml, that.icons.soundcloud);
+
+			that.player.node.connect(that.gainNode);
+
+			that.autoplay ? that.play() : that.pause();
+
+			that.emit('source', that.player.node, streamUrl);
+		}).on('error', function (err) {
+			that.restoreState();
+			that.error(err);
+		}).on('end', function () {
+			that.playNext();
+		});
+	}
 
 	return this;
 };
+
+//Add recent track
+AppAudio.prototype.addRecent = function (title, src) {
+	if (!src) return this;
+
+	if (this.recentSources.indexOf(src) < 0) {
+		this.recentSources.push(src);
+		this.recentTitles.push(title);
+	}
+
+	this.recentSources = this.recentSources.slice(-this.maxRecent);
+	this.recentTitles = this.recentTitles.slice(-this.maxRecent);
+
+	return this;
+}
+
+//Save/load recent tracks to list
+AppAudio.prototype.storageKey = 'app-audio';
+AppAudio.prototype.storage = sessionStorage || localStorage;
+AppAudio.prototype.saveSources = function () {
+	if (!this.storage) return this;
+
+	this.storage.setItem(this.storageKey, JSON.stringify({
+		recentSources: this.recentSources,
+		recentTitles: this.recentTitles,
+		current: this.currentSource
+	}));
+
+	return this;
+}
+AppAudio.prototype.loadSources = function () {
+	if (!this.storage) return this;
+
+	var obj = this.storage.getItem(this.storageKey);
+	if (!obj) return this;
+
+	var ref = JSON.parse(obj);
+	var recentSources = ref.recentSources;
+	var recentTitles = ref.recentTitles;
+	var current = ref.current;
+	if (recentSources && recentSources.length) {
+		this.recentSources = recentSources;
+		this.recentTitles = recentTitles;
+	}
+	this.set(current);
+
+	return this;
+}
 
 //Play/pause
 AppAudio.prototype.play = function () {
 	this.isPaused = false;
 	this.playEl.innerHTML = this.icons.pause;
 
-	this.play && this.playEl.removeAttribute('hidden');
+	this.play && this.buttonEl.removeAttribute('hidden');
 
-	if (this.micNode) {
-		this.gainNode.gain.value = 1;
-	}
+	this.player && this.player.play();
+	this.gainNode.gain.value = 1;
 
 	this.emit('play', this.micNode);
 
@@ -1009,27 +1441,59 @@ AppAudio.prototype.pause = function () {
 	this.isPaused = true;
 	this.playEl.innerHTML = this.icons.play;
 
-	this.play && this.playEl.removeAttribute('hidden');
+	this.player && this.player.pause();
 
-	if (this.micNode) {
-		this.gainNode.gain.value = 0;
-	}
+	this.play && this.buttonEl.removeAttribute('hidden');
+
+	this.gainNode.gain.value = 0;
 
 	this.emit('pause', this.micNode);
 
 	return this;
 };
 
+//play next track if any
+AppAudio.prototype.playNext = function () {
+	this.pause();
+
+	var src = this.nextSources.shift();
+
+	if (src) {
+		this.set(src);
+	}
+
+	return this;
+};
+
 //Disconnect all nodes, pause, reset source
 AppAudio.prototype.reset = function () {
-	this.isPaused = true;
-	this.playEl.innerHTML = this.icons.play;
-	this.playEl.setAttribute('hidden', true);
-	this.info('Select source', this.icons.eject);
+	//to avoid mixing multiple sources
+	this.pause();
 
+	//reset sources list
+	this.currentSource = null;
+
+	//reset UI
+	this.playEl.innerHTML = this.icons.play;
+	this.buttonEl.setAttribute('hidden', true);
+	this.nextButtonEl.setAttribute('hidden', true);
+	this.info('', this.icons.eject);
+
+	//disconnect audio
+	if (this.player) {
+		this.player = null;
+	}
 	if (this.micNode) {
 		this.micNode.disconnect();
 		this.micNode = null;
+	}
+	if (this.bufNode) {
+		this.bufNode.disconnect();
+		this.bufNode = null;
+	}
+	if (this.oscNode) {
+		this.oscNode.disconnect();
+		this.oscNode = null;
 	}
 
 	this.emit('reset', this.micNode);
@@ -1063,17 +1527,24 @@ AppAudio.prototype.hide = function (src) {
 AppAudio.prototype.saveState = function () {
 	this.lastTitle = this.inputEl.value;
 	this.lastIcon = this.iconEl.innerHTML;
+	this.lastPlayVisibility = this.buttonEl.hasAttribute('hidden');
 
 	return this;
 };
-AppAudio.prototype.restoreState = function () {
-	this.info(this.lastTitle, this.lastIcon);
+AppAudio.prototype.restoreState = function (state) {
+	state = state || this;
+
+	this.info(state.lastTitle, state.lastIcon);
+	if (state.lastPlayVisibility) this.buttonEl.setAttribute('hidden', true);
+	else {
+		this.buttonEl.removeAttribute('hidden');
+	}
 
 	return this;
 };
 
 //Duration of error message
-AppAudio.prototype.errorDuration = 1600;
+AppAudio.prototype.errorDuration = 2000;
 
 //Display error for a moment
 AppAudio.prototype.error = function error (msg) {
@@ -1081,8 +1552,14 @@ AppAudio.prototype.error = function error (msg) {
 
 	this.saveState();
 	this.info(msg, this.icons.error);
+	this.buttonEl.setAttribute('hidden', true);
+	this.contentEl.classList.add('aa-error');
+
+	//FIXME: emitter shits the bed here
+	// this.emit('error', msg);
 
 	setTimeout(function () {
+		this$1.contentEl.classList.remove('aa-error');
 		this$1.restoreState();
 	}, this.errorDuration);
 
@@ -1090,13 +1567,16 @@ AppAudio.prototype.error = function error (msg) {
 };
 //Display message
 AppAudio.prototype.info = function info (msg, icon) {
-	this.inputEl.value = msg;
+	this.inputEl.value = msg || 'Select source ▾';
 	this.iconEl.innerHTML = icon || this.icons.loading;
-	this.inputEl.title = this.inputEl.value;
+	this.contentEl.title = this.inputEl.value;
+
+	this.testEl.innerHTML = this.inputEl.value;
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
 
 	return this;
 };
-},{"audio-context":8,"color-alpha":15,"events":1,"get-float-time-domain-data":30,"inherits":34,"insert-styles":36,"is-mobile":39,"is-plain-obj":42,"is-url":43,"just-extend":44,"querystring":5,"web-audio-player":95,"xhr":104}],7:[function(require,module,exports){
+},{"audio-context":8,"capitalize-first-letter":12,"events":1,"get-float-time-domain-data":30,"inherits":34,"insert-styles":36,"is-mobile":39,"is-plain-obj":42,"is-url":43,"just-extend":44,"left-pad":45,"querystring":5,"web-audio-player":95,"xhr":104}],7:[function(require,module,exports){
 /* The following list is defined in React's core */
 var IS_UNITLESS = {
   animationIterationCount: true,
@@ -1453,6 +1933,11 @@ module.exports={
   "video/x-matroska": ["mkv", "mk3d", "mks"]
 }
 },{}],12:[function(require,module,exports){
+module.exports = function (string) {
+  return string.charAt(0).toUpperCase() + string.substring(1);
+}
+
+},{}],13:[function(require,module,exports){
 /**
  * @module  caret-position/get
  *
@@ -1502,7 +1987,7 @@ module.exports = function (input) {
 	}
 	return result;
 };
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * @module  caret-position
  */
@@ -1516,7 +2001,7 @@ function caret(a,b,c){
 
 caret.get = require('./get');
 caret.set = require('./set');
-},{"./get":12,"./set":14}],14:[function(require,module,exports){
+},{"./get":13,"./set":15}],15:[function(require,module,exports){
 /**
  * @module  caret-position/set
  *
@@ -1540,27 +2025,7 @@ module.exports = function(input, start, end) {
 		range.select();
 	}
 };
-},{}],15:[function(require,module,exports){
-/**
- * @module  color-alpha
- */
-var parse = require('color-parse');
-
-module.exports = alpha;
-
-function alpha (color, value) {
-	var obj = parse(color);
-
-	if (value == null) value = obj.alpha;
-
-	//catch percent
-	if (obj.space[0] === 'h') {
-		return obj.space + "a(" + (obj.values[0]) + "," + (obj.values[1]) + "%," + (obj.values[2]) + "%," + value + ")";
-	}
-
-	return obj.space + "a(" + (obj.values) + "," + value + ")";
-}
-},{"color-parse":19}],16:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /**
  * @module  color-interpolate
  * Pick color from palette by index
@@ -2706,7 +3171,7 @@ function numerify (input, opts) {
 
 	return input;
 }
-},{"caret-position2":13,"mumath/clamp":59,"mumath/round":61}],36:[function(require,module,exports){
+},{"caret-position2":14,"mumath/clamp":59,"mumath/round":61}],36:[function(require,module,exports){
 (function (global){
 'use strict'
 
@@ -5099,6 +5564,7 @@ module.exports = /([\u0030-\u0039\u00B2\u00B3\u00B9\u00BC-\u00BE\u0660-\u0669\u0
 /**
  * @module settings-panel
  */
+'use strict';
 
 var Emitter = require('events').EventEmitter;
 var inherits = require('inherits');
@@ -5115,7 +5581,7 @@ var scopeCss = require('scope-css');
 module.exports = Panel
 
 
-insertCss(".settings-panel {\r\n\tposition: relative;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tcursor: default;\r\n\ttext-align: left;\r\n\tbox-sizing: border-box;\r\n\tfont-family: sans-serif;\r\n\tfont-size: 1rem;\r\n\twidth: 32em;\r\n\tmax-width: 100%;\r\n\tpadding: 1em;\r\n}\r\n\r\n.settings-panel [hidden] {\r\n\tdisplay: none!important;\r\n}\r\n\r\n.settings-panel * {\r\n\tbox-sizing: border-box;\r\n}\r\n\r\n.settings-panel svg {\r\n\tfill: currentColor;\r\n\tmax-width: 100%;\r\n\tmax-height: 100%;\r\n\tdisplay: inline-block;\r\n}\r\n\r\n.settings-panel input,\r\n.settings-panel button,\r\n.settings-panel textarea,\r\n.settings-panel select {\r\n\tfont-family: inherit;\r\n\tfont-size: inherit;\r\n}\r\n\r\n\r\n.settings-panel a {\r\n\tcolor: inherit;\r\n\ttext-decoration: none;\r\n}\r\n\r\n/** Basic layout */\r\n.settings-panel-field {\r\n\tposition: relative;\r\n\tpadding: .25em;\r\n\tdisplay: table;\r\n\twidth: 100%;\r\n}\r\n.settings-panel-field:last-child {\r\n\tmargin-bottom: 0;\r\n}\r\n.settings-panel-label {\r\n\tleft: 0;\r\n\tdisplay: table-cell;\r\n\tline-height: 1.2;\r\n\tvertical-align: baseline;\r\n\tpadding-top: 0;\r\n\tmax-width: 100%;\r\n}\r\n.settings-panel-input {\r\n\tdisplay: table-cell;\r\n\tvertical-align: baseline;\r\n\tposition: relative;\r\n\twhite-space: nowrap;\r\n}\r\n\r\n.settings-panel-orientation-left .settings-panel-label {\r\n\twidth: 9em;\r\n\tpadding-right: .5em;\r\n}\r\n.settings-panel-orientation-right .settings-panel-label {\r\n\tdisplay: block;\r\n\tmargin-right: 0;\r\n\tfloat: right;\r\n\twidth: 9em;\r\n\tpadding-top: .4em;\r\n\tpadding-left: .5em;\r\n}\r\n.settings-panel-orientation-right .settings-panel-label + .settings-panel-input {\r\n\tdisplay: block;\r\n\twidth: calc(100% - 9em);\r\n}\r\n.settings-panel-orientation-top .settings-panel-label {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tmargin-right: 0;\r\n\tpadding-top: 0;\r\n\tline-height: 1.5;\r\n}\r\n.settings-panel-orientation-top .settings-panel-label + .settings-panel-input {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tpadding: 0;\r\n}\r\n.settings-panel-orientation-bottom .settings-panel-label {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tmargin-right: 0;\r\n\tpadding: 0;\r\n\tline-height: 1.5;\r\n\tborder-top: 2.5em solid transparent;\r\n}\r\n.settings-panel-orientation-bottom .settings-panel-label + .settings-panel-input {\r\n\twidth: 100%;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n}\r\n\r\n.settings-panel-orientation-left > .settings-panel-label {\r\n\twidth: 9em;\r\n\tdisplay: table-cell;\r\n}\r\n\r\n.settings-panel-title {\r\n\tfont-size: 1.6em;\r\n\tline-height: 1.25;\r\n\tmargin-top: 0;\r\n\tmargin-bottom: 0;\r\n\tpadding: .25em .25em;\r\n\ttext-align: center;\r\n}\r\n.settings-panel--collapsible .settings-panel-title {\r\n\tcursor: pointer;\r\n}\r\n.settings-panel--collapsed > *:not(.settings-panel-title) {\r\n\tdisplay: none!important;\r\n}\r\n\r\n\r\n/** Button */\r\n.settings-panel-field--button {\r\n\tdisplay: inline-block;\r\n}\r\n.settings-panel-field--button .settings-panel-input {\r\n\tdisplay: block;\r\n\ttext-align: center;\r\n}\r\n.settings-panel-button {\r\n\tvertical-align: baseline;\r\n\tline-height: 1;\r\n\tmin-height: 2em;\r\n\tpadding: .2em 1em;\r\n\twidth: 100%;\r\n\tcursor: pointer;\r\n}\r\n\r\n\r\n/** Default text and alike style */\r\n.settings-panel-text {\r\n\theight: 2em;\r\n\twidth: 100%;\r\n\tvertical-align: baseline;\r\n}\r\n.settings-panel-textarea {\r\n\twidth: 100%;\r\n\tdisplay: block;\r\n\tvertical-align: top; /* allowable as we use autoheight */\r\n\tmin-height: 2em;\r\n}\r\n\r\n/** Checkbox style */\r\n.settings-panel-field--checkbox .settings-panel-input {\r\n\tline-height: 2em;\r\n}\r\n.settings-panel-checkbox-group {\r\n\tborder: none;\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\t-o-appearance: none;\r\n\tappearance: none;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n\twhite-space: normal;\r\n}\r\n.settings-panel-checkbox {\r\n\tdisplay: inline-block;\r\n\tvertical-align: middle;\r\n\twidth: 1.2em;\r\n\theight: 1.2em;\r\n\tline-height: 1.2em;\r\n\tmargin: -.15em .25em 0 0;\r\n}\r\n.settings-panel-checkbox-label {\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tline-height: 1.2;\r\n\tmargin-right: 1em;\r\n}\r\n.settings-panel-checkbox-group .settings-panel-checkbox-label:last-child {\r\n\tmargin-right: 0;\r\n}\r\n\r\n\r\n/** Color picker style */\r\n.settings-panel-color {\r\n\tposition: relative;\r\n\twidth: 2em;\r\n\theight: 2em;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tmargin: auto;\r\n}\r\n.settings-panel-color-value {\r\n\twidth: 100%;\r\n\theight: 2em;\r\n\tpadding: 0 0 0 2.5em;\r\n}\r\n.settings-panel .Scp {\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tposition: absolute;\r\n\tz-index: 10;\r\n\tcursor: pointer;\r\n\tbottom: -120px;\r\n}\r\n.settings-panel .Scp-saturation {\r\n\tposition: relative;\r\n\twidth: calc(100% - 25px);\r\n\theight: 100%;\r\n\tbackground: linear-gradient(to right, #fff 0%, #f00 100%);\r\n\tfloat: left;\r\n}\r\n.settings-panel .Scp-brightness {\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tbackground: linear-gradient(to top, #000 0%, rgba(255,255,255,0) 100%);\r\n}\r\n.settings-panel .Scp-sbSelector {\r\n\tborder: 1px solid;\r\n\tposition: absolute;\r\n\twidth: 14px;\r\n\theight: 14px;\r\n\tbackground: #fff;\r\n\tborder-radius: 10px;\r\n\ttop: -7px;\r\n\tleft: -7px;\r\n\tbox-sizing: border-box;\r\n\tz-index: 10;\r\n}\r\n.settings-panel .Scp-hue {\r\n\twidth: 20px;\r\n\theight: 100%;\r\n\tposition: relative;\r\n\tfloat: left;\r\n\tbackground: linear-gradient(to bottom, #f00 0%, #f0f 17%, #00f 34%, #0ff 50%, #0f0 67%, #ff0 84%, #f00 100%);\r\n}\r\n.settings-panel .Scp-hSelector {\r\n\tposition: absolute;\r\n\tbackground: #fff;\r\n\tborder-bottom: 1px solid #000;\r\n\tright: -3px;\r\n\twidth: 10px;\r\n\theight: 2px;\r\n}\r\n\r\n\r\n\r\n/** Interval style */\r\n.settings-panel-interval {\r\n\tposition: relative;\r\n\t-webkit-appearance: none;\r\n\tdisplay: inline-block;\r\n\tvertical-align: top;\r\n\theight: 2em;\r\n\tmargin: 0px 0;\r\n\twidth: 70%;\r\n\tbackground: #ddd;\r\n\tcursor: ew-resize;\r\n\t-webkit-touch-callout: none;\r\n\t-webkit-user-select: none;\r\n\t-khtml-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n}\r\n.settings-panel-interval-handle {\r\n\tbackground: #7a4;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tmin-width: 1px;\r\n}\r\n.settings-panel.settings-panel-interval-dragging * {\r\n\t-webkit-touch-callout: none !important;\r\n\t-webkit-user-select: none !important;\r\n\t-khtml-user-select: none !important;\r\n\t-moz-user-select: none !important;\r\n\t-ms-user-select: none !important;\r\n\tuser-select: none !important;\r\n\r\n\tcursor: ew-resize !important;\r\n}\r\n\r\n.settings-panel-interval + .settings-panel-value {\r\n\tright: 0;\r\n\tpadding-left: .5em;\r\n}\r\n\r\n\r\n\r\n/** Select style */\r\n.settings-panel-select {\r\n\tdisplay: inline-block;\r\n\twidth: 100%;\r\n\theight: 2em;\r\n\tvertical-align: baseline;\r\n}\r\n\r\n/** Value style */\r\n.settings-panel-value {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\t-o-appearance: none;\r\n\tappearance: none;\r\n\tmin-width: 3em;\r\n\tpadding: 0 0 0 0em;\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\tcursor: text;\r\n\theight: 2em;\r\n\tborder: none;\r\n\tborder-radius: 0;\r\n\toutline: none;\r\n\tfont-family: inherit;\r\n\tbackground: none;\r\n\tcolor: inherit;\r\n\twidth: 15%;\r\n}\r\n.settings-panel-value:focus {\r\n\toutline: 0;\r\n\tbox-shadow: 0;\r\n}\r\n.settings-panel-value-tip {\r\n\tdisplay: none;\r\n}\r\n\r\n/** Range style */\r\n.settings-panel-range {\r\n\twidth: 85%;\r\n\tpadding: 0;\r\n\tmargin: 0px 0;\r\n\theight: 2em;\r\n\tvertical-align: top;\r\n}\r\n.settings-panel-range + .settings-panel-value {\r\n\tpadding-left: .5em;\r\n\twidth: 15%;\r\n}\r\n\r\n.settings-panel-switch {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\tappearance: none;\r\n\tborder: none;\r\n\tdisplay: block;\r\n\tvertical-align: baseline;\r\n\tpadding: 0;\r\n\tmargin: 0;\r\n\tline-height: 2em;\r\n}\r\n.settings-panel-switch-input {\r\n\tmargin: 0;\r\n\tvertical-align: middle;\r\n\twidth: 1.2em;\r\n\theight: 1.2em;\r\n\tcursor: pointer;\r\n\tmargin-right: .25em;\r\n}\r\n.settings-panel-switch-label {\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\tline-height: 1.2;\r\n\tmargin-right: 1em;\r\n}\r\n\r\n\r\n.settings-panel hr {\r\n\tborder: none;\r\n\theight: 0;\r\n\tmargin: .5em 0;\r\n\tborder-bottom: 1px dotted;\r\n}\r\n\r\n.settings-panel-field--disabled {\r\n\topacity: .5;\r\n\tpointer-events: none;\r\n}");
+insertCss(".settings-panel {\r\n\tposition: relative;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tcursor: default;\r\n\ttext-align: left;\r\n\tbox-sizing: border-box;\r\n\tfont-family: sans-serif;\r\n\tfont-size: 1rem;\r\n\twidth: 32em;\r\n\tmax-width: 100%;\r\n\tpadding: 1em;\r\n}\r\n\r\n.settings-panel [hidden] {\r\n\tdisplay: none!important;\r\n}\r\n\r\n.settings-panel * {\r\n\tbox-sizing: border-box;\r\n}\r\n\r\n.settings-panel svg {\r\n\tfill: currentColor;\r\n\tmax-width: 100%;\r\n\tmax-height: 100%;\r\n\tdisplay: inline-block;\r\n}\r\n\r\n.settings-panel input,\r\n.settings-panel button,\r\n.settings-panel textarea,\r\n.settings-panel select {\r\n\tfont-family: inherit;\r\n\tfont-size: inherit;\r\n}\r\n\r\n.settings-panel textarea {\r\n\tmax-height: 8em;\r\n}\r\n\r\n\r\n.settings-panel a {\r\n\tcolor: inherit;\r\n\ttext-decoration: none;\r\n}\r\n\r\n/** Basic layout */\r\n.settings-panel-field {\r\n\tposition: relative;\r\n\tpadding: .25em;\r\n\tdisplay: table;\r\n\twidth: 100%;\r\n}\r\n.settings-panel-field:last-child {\r\n\tmargin-bottom: 0;\r\n}\r\n.settings-panel-label {\r\n\tleft: 0;\r\n\tdisplay: table-cell;\r\n\tline-height: 1.2;\r\n\tvertical-align: baseline;\r\n\tpadding-top: 0;\r\n\tmax-width: 100%;\r\n}\r\n.settings-panel-input {\r\n\tdisplay: table-cell;\r\n\tvertical-align: baseline;\r\n\tposition: relative;\r\n\twhite-space: nowrap;\r\n}\r\n\r\n.settings-panel-orientation-left .settings-panel-label {\r\n\twidth: 9em;\r\n\tpadding-right: .5em;\r\n}\r\n.settings-panel-orientation-right .settings-panel-label {\r\n\tdisplay: block;\r\n\tmargin-right: 0;\r\n\tfloat: right;\r\n\twidth: 9em;\r\n\tpadding-top: .4em;\r\n\tpadding-left: .5em;\r\n}\r\n.settings-panel-orientation-right .settings-panel-label + .settings-panel-input {\r\n\tdisplay: block;\r\n\twidth: calc(100% - 9em);\r\n}\r\n.settings-panel-orientation-top .settings-panel-label {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tmargin-right: 0;\r\n\tpadding-top: 0;\r\n\tline-height: 1.5;\r\n}\r\n.settings-panel-orientation-top .settings-panel-label + .settings-panel-input {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tpadding: 0;\r\n}\r\n.settings-panel-orientation-bottom .settings-panel-label {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\tmargin-right: 0;\r\n\tpadding: 0;\r\n\tline-height: 1.5;\r\n\tborder-top: 2.5em solid transparent;\r\n}\r\n.settings-panel-orientation-bottom .settings-panel-label + .settings-panel-input {\r\n\twidth: 100%;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n}\r\n\r\n.settings-panel-orientation-left > .settings-panel-label {\r\n\twidth: 9em;\r\n\tdisplay: table-cell;\r\n}\r\n\r\n.settings-panel-title {\r\n\tfont-size: 1.6em;\r\n\tline-height: 1.25;\r\n\tmargin-top: 0;\r\n\tmargin-bottom: 0;\r\n\tpadding: .25em .25em;\r\n\ttext-align: center;\r\n}\r\n.settings-panel--collapsible .settings-panel-title {\r\n\tcursor: pointer;\r\n}\r\n.settings-panel--collapsed > *:not(.settings-panel-title) {\r\n\tdisplay: none!important;\r\n}\r\n\r\n\r\n/** Button */\r\n.settings-panel-field--button {\r\n\tdisplay: inline-block;\r\n}\r\n.settings-panel-field--button .settings-panel-input {\r\n\tdisplay: block;\r\n\ttext-align: center;\r\n}\r\n.settings-panel-button {\r\n\tvertical-align: baseline;\r\n\tline-height: 1;\r\n\tmin-height: 2em;\r\n\tpadding: .2em 1em;\r\n\twidth: 100%;\r\n\tcursor: pointer;\r\n}\r\n\r\n\r\n/** Default text and alike style */\r\n.settings-panel-text {\r\n\theight: 2em;\r\n\twidth: 100%;\r\n\tvertical-align: baseline;\r\n}\r\n.settings-panel-textarea {\r\n\twidth: 100%;\r\n\tdisplay: block;\r\n\tvertical-align: top; /* allowable as we use autoheight */\r\n\tmin-height: 2em;\r\n}\r\n\r\n/** Checkbox style */\r\n.settings-panel-field--checkbox .settings-panel-input {\r\n\tline-height: 2em;\r\n}\r\n.settings-panel-checkbox-group {\r\n\tborder: none;\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\t-o-appearance: none;\r\n\tappearance: none;\r\n\tmargin: 0;\r\n\tpadding: 0;\r\n\twhite-space: normal;\r\n}\r\n.settings-panel-checkbox {\r\n\tdisplay: inline-block;\r\n\tvertical-align: middle;\r\n\twidth: 1.2em;\r\n\theight: 1.2em;\r\n\tline-height: 1.2em;\r\n\tmargin: -.15em .25em 0 0;\r\n}\r\n.settings-panel-checkbox-label {\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tline-height: 1.2;\r\n\tmargin-right: 1em;\r\n}\r\n.settings-panel-checkbox-group .settings-panel-checkbox-label:last-child {\r\n\tmargin-right: 0;\r\n}\r\n\r\n\r\n/** Color picker style */\r\n.settings-panel-color {\r\n\tposition: relative;\r\n\twidth: 2em;\r\n\theight: 2em;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tmargin: auto;\r\n}\r\n.settings-panel-color-value {\r\n\twidth: 100%;\r\n\theight: 2em;\r\n\tpadding: 0 0 0 2.5em;\r\n}\r\n.settings-panel .Scp {\r\n\t-webkit-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n\tposition: absolute;\r\n\tz-index: 10;\r\n\tcursor: pointer;\r\n\tbottom: -120px;\r\n}\r\n.settings-panel .Scp-saturation {\r\n\tposition: relative;\r\n\twidth: calc(100% - 25px);\r\n\theight: 100%;\r\n\tbackground: linear-gradient(to right, #fff 0%, #f00 100%);\r\n\tfloat: left;\r\n}\r\n.settings-panel .Scp-brightness {\r\n\twidth: 100%;\r\n\theight: 100%;\r\n\tbackground: linear-gradient(to top, #000 0%, rgba(255,255,255,0) 100%);\r\n}\r\n.settings-panel .Scp-sbSelector {\r\n\tborder: 1px solid;\r\n\tposition: absolute;\r\n\twidth: 14px;\r\n\theight: 14px;\r\n\tbackground: #fff;\r\n\tborder-radius: 10px;\r\n\ttop: -7px;\r\n\tleft: -7px;\r\n\tbox-sizing: border-box;\r\n\tz-index: 10;\r\n}\r\n.settings-panel .Scp-hue {\r\n\twidth: 20px;\r\n\theight: 100%;\r\n\tposition: relative;\r\n\tfloat: left;\r\n\tbackground: linear-gradient(to bottom, #f00 0%, #f0f 17%, #00f 34%, #0ff 50%, #0f0 67%, #ff0 84%, #f00 100%);\r\n}\r\n.settings-panel .Scp-hSelector {\r\n\tposition: absolute;\r\n\tbackground: #fff;\r\n\tborder-bottom: 1px solid #000;\r\n\tright: -3px;\r\n\twidth: 10px;\r\n\theight: 2px;\r\n}\r\n\r\n\r\n\r\n/** Interval style */\r\n.settings-panel-interval {\r\n\tposition: relative;\r\n\t-webkit-appearance: none;\r\n\tdisplay: inline-block;\r\n\tvertical-align: top;\r\n\theight: 2em;\r\n\tmargin: 0px 0;\r\n\twidth: 70%;\r\n\tbackground: #ddd;\r\n\tcursor: ew-resize;\r\n\t-webkit-touch-callout: none;\r\n\t-webkit-user-select: none;\r\n\t-khtml-user-select: none;\r\n\t-moz-user-select: none;\r\n\t-ms-user-select: none;\r\n\tuser-select: none;\r\n}\r\n.settings-panel-interval-handle {\r\n\tbackground: #7a4;\r\n\tposition: absolute;\r\n\ttop: 0;\r\n\tbottom: 0;\r\n\tmin-width: 1px;\r\n}\r\n.settings-panel.settings-panel-interval-dragging * {\r\n\t-webkit-touch-callout: none !important;\r\n\t-webkit-user-select: none !important;\r\n\t-khtml-user-select: none !important;\r\n\t-moz-user-select: none !important;\r\n\t-ms-user-select: none !important;\r\n\tuser-select: none !important;\r\n\r\n\tcursor: ew-resize !important;\r\n}\r\n\r\n.settings-panel-interval + .settings-panel-value {\r\n\tright: 0;\r\n\tpadding-left: .5em;\r\n}\r\n\r\n\r\n\r\n/** Select style */\r\n.settings-panel-select {\r\n\tdisplay: inline-block;\r\n\twidth: 100%;\r\n\theight: 2em;\r\n\tvertical-align: baseline;\r\n}\r\n\r\n/** Value style */\r\n.settings-panel-value {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\t-o-appearance: none;\r\n\tappearance: none;\r\n\tmin-width: 3em;\r\n\tpadding: 0 0 0 0em;\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\tcursor: text;\r\n\theight: 2em;\r\n\tborder: none;\r\n\tborder-radius: 0;\r\n\toutline: none;\r\n\tfont-family: inherit;\r\n\tbackground: none;\r\n\tcolor: inherit;\r\n\twidth: 15%;\r\n}\r\n.settings-panel-value:focus {\r\n\toutline: 0;\r\n\tbox-shadow: 0;\r\n}\r\n.settings-panel-value-tip {\r\n\tdisplay: none;\r\n}\r\n\r\n/** Range style */\r\n.settings-panel-range {\r\n\twidth: 85%;\r\n\tpadding: 0;\r\n\tmargin: 0px 0;\r\n\theight: 2em;\r\n\tvertical-align: top;\r\n}\r\n.settings-panel-range + .settings-panel-value {\r\n\tpadding-left: .5em;\r\n\twidth: 15%;\r\n}\r\n\r\n.settings-panel-switch {\r\n\t-webkit-appearance: none;\r\n\t-moz-appearance: none;\r\n\tappearance: none;\r\n\tborder: none;\r\n\tdisplay: block;\r\n\tvertical-align: baseline;\r\n\tpadding: 0;\r\n\tmargin: 0;\r\n\tline-height: 2em;\r\n}\r\n.settings-panel-switch-input {\r\n\tmargin: 0;\r\n\tvertical-align: middle;\r\n\twidth: 1.2em;\r\n\theight: 1.2em;\r\n\tcursor: pointer;\r\n\tmargin-right: .25em;\r\n}\r\n.settings-panel-switch-label {\r\n\tdisplay: inline-block;\r\n\tvertical-align: baseline;\r\n\tline-height: 1.2;\r\n\tmargin-right: 1em;\r\n}\r\n\r\n\r\n.settings-panel hr {\r\n\tborder: none;\r\n\theight: 0;\r\n\tmargin: .5em 0;\r\n\tborder-bottom: 1px dotted;\r\n}\r\n\r\n.settings-panel-field--disabled {\r\n\topacity: .5;\r\n\tpointer-events: none;\r\n}");
 
 
 /**
@@ -5203,7 +5669,10 @@ Panel.prototype.set = function (name, value) {
 		var items$1 = name;
 		var list = [];
 		for (var key in items$1) {
-			items$1[key].id = key;
+			if (!isPlainObject(items$1[key])) {
+				items$1[key] = {value: items$1[key]};
+			}
+			if (items$1[key].id == null) items$1[key].id = key;
 			list.push(items$1[key]);
 		}
 		list = list.sort(function (a, b) { return (a.order||0) - (b.order||0); });
@@ -5554,6 +6023,8 @@ Panel.prototype.orientation = 'left';
 /** Display collapse button */
 Panel.prototype.collapsible = false;
 },{"./src/button":76,"./src/checkbox":77,"./src/color":78,"./src/custom":79,"./src/interval":80,"./src/range":81,"./src/select":82,"./src/switch":83,"./src/text":84,"./src/textarea":85,"./theme/none":88,"add-px-to-style":7,"dom-css":22,"events":1,"get-uid":31,"inherits":34,"insert-styles":36,"is-plain-obj":42,"just-extend":44,"param-case":65,"scope-css":70}],76:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 
@@ -5585,6 +6056,8 @@ Button.prototype.update = function (opts) {
 
 Button.prototype.label = false;
 },{"events":1,"inherits":34}],77:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var format = require('param-case')
@@ -5598,7 +6071,7 @@ function Checkbox (opts) {
 
 	if (!(this instanceof Checkbox)) return new Checkbox(opts)
 
-	var self = this;
+	var that = this;
 
 	if (!this.group) {
 		this.group = document.createElement('fieldset');
@@ -5622,10 +6095,10 @@ function Checkbox (opts) {
 			this.labelEl.innerHTML = '&nbsp;';
 			label.className = 'settings-panel-checkbox-label';
 			input.onchange = function (data) {
-				self.emit('input', data.target.checked)
+				that.emit('input', data.target.checked)
 			}
 			setTimeout(function () {
-				self.emit('init', input.checked)
+				that.emit('init', input.checked)
 			})
 		}
 	}
@@ -5634,7 +6107,7 @@ function Checkbox (opts) {
 		var html = '';
 
 		if (Array.isArray(opts.options)) {
-			for (i = 0; i < opts.options.length; i++) {
+			for (var i = 0; i < opts.options.length; i++) {
 				var option = opts.options[i]
 				html += createOption(option, option);
 			}
@@ -5652,15 +6125,14 @@ function Checkbox (opts) {
 		setTimeout(function () {
 			this$1.emit('init', getState());
 		});
+	}
 
-		var that = this;
-		function getState () {
-			var v = [];
-			[].slice.call(that.group.querySelectorAll('.settings-panel-checkbox')).forEach(function (el) {
-				if (el.checked) v.push(el.getAttribute('data-value'));
-			});
-			return v;
-		}
+	function getState () {
+		var v = [];
+		[].slice.call(that.group.querySelectorAll('.settings-panel-checkbox')).forEach(function (el) {
+			if (el.checked) v.push(el.getAttribute('data-value'));
+		});
+		return v;
 	}
 
 	function createOption (label, value) {
@@ -5702,6 +6174,8 @@ Checkbox.prototype.update = function (opts) {
 	return this;
 }
 },{"events":1,"inherits":34,"just-extend":44,"param-case":65}],78:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var ColorPicker = require('simple-color-picker')
 var inherits = require('inherits')
@@ -5811,6 +6285,8 @@ Color.prototype.update = function (opts) {
  * A custom html component
  */
 
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var extend = require('just-extend')
@@ -5858,6 +6334,8 @@ Custom.prototype.update = function (opts) {
 	}
 };
 },{"events":1,"inherits":34,"just-extend":44}],80:[function(require,module,exports){
+'use strict';
+
 var isNumeric = require('is-numeric')
 var css = require('dom-css')
 var isMobile = require('is-mobile')()
@@ -6126,6 +6604,8 @@ Range.prototype.update = function (opts) {
 	return this;
 }
 },{"./value":86,"dom-css":22,"events":1,"inherits":34,"is-mobile":39,"is-numeric":41,"mumath/clamp":59,"mumath/precision":60,"param-case":65}],81:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var isNumeric = require('is-numeric')
@@ -6301,6 +6781,8 @@ Range.prototype.update = function (opts) {
 	return this;
 }
 },{"./value":86,"dom-css":22,"events":1,"inherits":34,"is-numeric":41,"mumath/precision":60,"param-case":65}],82:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var format = require('param-case')
@@ -6334,8 +6816,8 @@ Select.prototype.update = function (opts) {
 	upTriangle.className = 'settings-panel-select-triangle settings-panel-select-triangle--up'
 
 	if (Array.isArray(opts.options)) {
-		for (i = 0; i < opts.options.length; i++) {
-			option = opts.options[i]
+		for (var i$1 = 0; i$1 < opts.options.length; i$1++) {
+			option = opts.options[i$1]
 			el = document.createElement('option')
 			el.value = el.textContent = option
 			if (opts.value === option) {
@@ -6345,8 +6827,8 @@ Select.prototype.update = function (opts) {
 		}
 	} else {
 		keys = Object.keys(opts.options)
-		for (i = 0; i < keys.length; i++) {
-			key = keys[i]
+		for (var i$2 = 0; i$2 < keys.length; i$2++) {
+			key = keys[i$2]
 			el = document.createElement('option')
 			el.value = key
 			if (opts.value === key) {
@@ -6372,6 +6854,8 @@ Select.prototype.update = function (opts) {
 	return this;
 }
 },{"events":1,"inherits":34,"param-case":65}],83:[function(require,module,exports){
+'use strict';
+
 var inherits = require('inherits');
 var Emitter = require('events').EventEmitter;
 var format = require('param-case');
@@ -6396,7 +6880,7 @@ function Switch (opts) {
 		var html = '';
 
 		if (Array.isArray(opts.options)) {
-			for (i = 0; i < opts.options.length; i++) {
+			for (var i = 0; i < opts.options.length; i++) {
 				var option = opts.options[i]
 				html += createOption(option, option);
 			}
@@ -6433,6 +6917,8 @@ Switch.prototype.update = function (opts) {
 	return this;
 }
 },{"events":1,"inherits":34,"just-extend":44,"param-case":65}],84:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var css = require('dom-css')
@@ -6478,6 +6964,8 @@ Text.prototype.update = function (opts) {
 	return this;
 }
 },{"dom-css":22,"events":1,"inherits":34,"input-number":35,"just-extend":44}],85:[function(require,module,exports){
+'use strict';
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
 var css = require('dom-css')
@@ -6531,6 +7019,8 @@ Textarea.prototype.update = function (opts) {
 	return this;
 }
 },{"autosize":9,"dom-css":22,"events":1,"inherits":34,"just-extend":44}],86:[function(require,module,exports){
+'use strict';
+
 var num = require('input-number');
 
 module.exports = function (opts) {
@@ -6575,6 +7065,8 @@ module.exports = function (opts) {
  *
  * Midragonlistic theme based off https://dribbble.com/guidorosso NIMA editor settings
  */
+'use strict';
+
 var px = require('add-px-to-style');
 var fonts = require('google-fonts');
 var color = require('tinycolor2');
@@ -6635,6 +7127,7 @@ function alpha (c, value) {
 /**
  * @module  settings-panel/theme/none
  */
+'use strict';
 
 var px = require('add-px-to-style');
 
@@ -9232,6 +9725,7 @@ var Audio = require('./');
 var css = require('insert-styles');
 var palettes = require('nice-color-palettes');
 var Settings = require('settings-panel');
+var isMobile = require('is-mobile')();
 
 
 // prepare mobile
@@ -9240,88 +9734,97 @@ meta.setAttribute('name', 'viewport')
 meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=0')
 document.head.appendChild(meta);
 
-
-css("\n\tbody {\n\t\tmargin: 0;\n\t\tbackground: #D38312; /* fallback for old browsers */\n\t\tbackground: -webkit-linear-gradient(to left, #D38312 , #A83279); /* Chrome 10-25, Safari 5.1-6 */\n\t\tbackground: linear-gradient(to left, #D38312 , #A83279); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */\n\t\toverflow: hidden;\n\t}\n\t.app-audio {\n\t\tfont-family: \"Roboto\", sans-serif;\n\t\tfont-weight: 400;\n\t}\n");
+css("\n\tbody {\n\t\tmargin: 0;\n\t\tbackground: #D38312;\n\t\tbackground: -webkit-linear-gradient(to left, #D38312 , #A83279);\n\t\tbackground: linear-gradient(to left, #D38312 , #A83279);\n\t\toverflow: hidden;\n\t}\n\t.app-audio {\n\t\tfont-family: \"Roboto\", sans-serif;\n\t\tfont-weight: 400;\n\t}\n\n\t@media (max-width:640px) {\n\t\t.settings-panel {\n\t\t\tdisplay: none;\n\t\t}\n\t}\n");
 
 var ghIcon = "<svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"784\" height=\"1024\" viewBox=\"0 0 784 1024\"><path d=\"M4.168 480.005q0 107.053 52.114 194.314 52.114 90.085 141.399 141.799t194.314 51.714q105.441 0 195.126-51.714 89.685-52.114 141.199-141.599t51.514-194.514q0-106.652-51.714-195.126-52.114-89.685-141.599-141.199t-194.514-51.514q-107.053 0-194.314 52.114-90.085 52.114-141.799 141.399t-51.714 194.314zM68.802 480.005q0-64.634 25.451-124.832t69.482-103.828q44.031-44.031 103.828-69.282t124.432-25.251 124.832 25.251 104.229 69.282q43.631 43.631 68.882 103.828t25.251 124.832q0 69.482-28.487 132.504t-79.989 108.876-117.76 66.458v-113.924q0-42.419-34.747-66.257 85.238-7.672 124.632-43.23t39.383-112.712q0-59.786-36.759-100.593 7.272-21.815 7.272-42.018 0-29.899-13.732-54.939-27.063 0-48.478 8.884t-52.515 30.699q-37.571-8.484-77.565-8.484-45.654 0-85.238 9.295-30.299-22.216-52.314-31.311t-49.891-9.084q-13.332 25.451-13.332 54.939 0 21.004 6.871 42.419-36.759 39.594-36.759 100.192 0 77.165 39.183 112.312t125.644 43.23q-23.027 15.355-31.911 44.843-19.792 6.871-41.207 6.871-16.156 0-27.875-7.272-3.636-2.024-6.66-4.236t-6.26-5.448-5.248-5.048-5.248-6.26-4.236-5.659-4.848-6.46-4.236-5.659q-18.991-25.051-45.243-25.051-14.143 0-14.143 6.060 0 2.424 6.871 8.083 12.931 11.308 13.732 12.12 9.696 7.672 10.908 9.696 11.719 14.544 17.779 31.911 22.627 50.502 77.565 50.502 8.884 0 34.747-4.036v85.649q-66.257-20.603-117.76-66.458t-79.989-108.876-28.487-132.504z\"></path></svg>";
 
 
 //create audio
 var audio = new Audio({
-	color: 'white'
+	color: 'white',
+	source: 'https://soundcloud.com/pacomusic/sets/p-a-c-o-return-of-the-jaded',
+	// sources: [],
+	save: false
 });
-
-
 
 //init settings panel
-var panel = new Settings({
-	settings: {
-		value: ['play', 'autoplay', 'loop', 'icon']
-	},
-	sources: {
-		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
-		change: function (v) {
-			audio.update({
-				file: v.indexOf('file') >= 0,
-				url: v.indexOf('url') >= 0,
-				soundcloud: v.indexOf('soundcloud') >= 0,
-				mic: v.indexOf('mic') >= 0,
-				signal: v.indexOf('signal') >= 0,
-				recent: v.indexOf('recent') >= 0,
-			});
+if (!isMobile) {
+	var panel = new Settings({
+		// settings: {
+		// 	options: ['play', 'autoplay', 'loop', 'icon', 'progress'],
+		// 	value: ['play', 'autoplay', 'loop', 'icon'].filter(name => audio[name]),
+		// 	change: v => {
+		// 		audio.update({
+		// 			loop: v.indexOf('loop') >= 0
+		// 		});
+		// 	}
+		// },
+		sources: {
+			//FIXME: detect set from audio
+			value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
+			change: function (v) {
+				audio.update({
+					file: v.indexOf('file') >= 0,
+					url: v.indexOf('url') >= 0,
+					soundcloud: v.indexOf('soundcloud') >= 0,
+					mic: v.indexOf('mic') >= 0,
+					signal: v.indexOf('signal') >= 0,
+					recent: v.indexOf('recent') >= 0,
+				});
+			}
+		},
+		color: {
+			type: 'color',
+			value: audio.color,
+			change: function (v) {
+				audio.update({color: v});
+			}
+		},
+
+		// log: {
+		// 	type: 'textarea'
+		// },
+
+		hr: {label: false, order: 14, content: '<hr/>'},
+
+		reset: {
+			type: 'button',
+			order: 17,
+			style: 'width: 33.33%;',
+			input: function () { return audio.reset(); }
+		},
+		pause: {
+			type: 'button',
+			order: 15,
+			style: 'width: 33.33%;',
+			input: function () { return audio.pause(); }
+		},
+		playBtn: {
+			label: 'Play',
+			type: 'button',
+			order: 16,
+			style: 'width: 33.33%;',
+			input: function () { return audio.play(); }
 		}
-	},
-	color: {
-		type: 'color',
-		value: 'white',
-		change: function (v) {
-			audio.update({color: v});
-		}
-	},
-
-	log: {
-		type: 'textarea'
-	},
-
-	hr: {label: false, order: 14, content: '<hr/>'},
-
-	reset: {
-		type: 'button',
-		order: 17,
-		style: 'width: 33.33%;',
-		input: function () { return audio.reset(); }
-	},
-	pause: {
-		type: 'button',
-		order: 15,
-		style: 'width: 33.33%;',
-		input: function () { return audio.pause(); }
-	},
-	playBtn: {
-		label: 'Play',
-		type: 'button',
-		order: 16,
-		style: 'width: 33.33%;',
-		input: function () { return audio.play(); }
-	}
-}, {
-	title: ("<a href=\"https://github.com/dfcreative/app-audio\" title=\"app-audio in github\">app-audio <span style=\"position: absolute; margin-left: .15em; margin-top: -.25em; width: .75em; height: .75em;\">" + ghIcon + "</span></a>"),
-	theme: require('settings-panel/theme/dragon'),
-	style: 'width: 240px; position: absolute; top: 0; right: 0;',
-	palette: ['#1C0515', 'white']
-});
-panel.element.addEventListener('click', function (e) {
-	e.stopPropagation()
-});
+	}, {
+		title: ("<a href=\"https://github.com/dfcreative/app-audio\" title=\"app-audio in github\">app-audio <span style=\"position: absolute; margin-left: .15em; margin-top: -.25em; width: .75em; height: .75em;\">" + ghIcon + "</span></a>"),
+		theme: require('settings-panel/theme/dragon'),
+		style: 'width: 240px; position: absolute; top: 0; right: 0;',
+		palette: ['#1C0515', 'white']
+	});
+	panel.element.addEventListener('click', function (e) {
+		e.stopPropagation()
+	});
 
 
-audio.on('play', function () {
-	panel.set('log', panel.get('log') + 'play\n');
-});
-audio.on('pause', function () {
-	panel.set('log', panel.get('log') + 'pause\n');
-});
-audio.on('reset', function () {
-	panel.set('log', panel.get('log') + 'reset\n');
-});
-},{"./":6,"insert-styles":36,"nice-color-palettes":63,"settings-panel":75,"settings-panel/theme/dragon":87}]},{},[107]);
+	// audio.on('play', function () {
+	// 	panel.set('log', panel.get('log') + 'play\n');
+	// });
+	// audio.on('pause', function () {
+	// 	panel.set('log', panel.get('log') + 'pause\n');
+	// });
+	// audio.on('reset', function () {
+	// 	panel.set('log', panel.get('log') + 'reset\n');
+	// });
+}
+},{"./":6,"insert-styles":36,"is-mobile":39,"nice-color-palettes":63,"settings-panel":75,"settings-panel/theme/dragon":87}]},{},[107]);
