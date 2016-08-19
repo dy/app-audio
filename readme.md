@@ -89,7 +89,7 @@ Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud UR
 </details>
 <details><summary>**`appAudio.play();`**</summary>
 
-Play selected source. Is also has additional playback methods:
+Play selected source. Other playback methods:
 
 ```js
 //pause current source, for mic - mute output
@@ -125,14 +125,9 @@ appAudio.on('reset', () => {});
 ```
 
 </details>
-<details><summary>**`appAudio.show(data);`**</summary>
+<details><summary>**`appAudio.show();`**</summary>
 
-Open menu.
-
-</details>
-<details><summary>**`appAudio.hide(data);`**</summary>
-
-Hide menu.
+Open menu. To hide menu, call `appAudio.hide()`
 
 </details>
 <details><summary>**`appAudio.update(options?);`**</summary>
