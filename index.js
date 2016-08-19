@@ -495,9 +495,9 @@ AppAudio.prototype.setSource = function (src) {
 	if (src instanceof FileList) {
 		let list = [];
 
-		for (var i = 0; i < list.length; i++) {
-			if (/audio/.test(list[i].type)) {
-				list.push(list[i]);
+		for (var i = 0; i < src.length; i++) {
+			if (/audio/.test(src[i].type)) {
+				list.push(src[i]);
 			}
 		}
 
@@ -508,41 +508,46 @@ AppAudio.prototype.setSource = function (src) {
 
 		this.nextSources = list;
 
-		this.autoplay && this.play();
+		return this.setSource(this.nextSources[0]);
 	}
 
 	//single file instance
 	if (src instanceof File) {
 		let url = URL.createObjectURL(src);
 
-		this.info(src.name, this.icons.record);
-		this.playQueue = [url];
+		this.saveState();
 
-		this.reset();
-		this.player = new Player(url, {
+
+		let player = new Player(url, {
 			context: this.context,
 			loop: this.loop,
-			// buffer: isMobile,
 			crossOrigin: 'Anonymous'
-		})
-		.on('load', e => {
-			this.play && this.audioEl.removeAttribute('hidden');
+		}).on('load', e => {
+			this.reset();
+
+			this.info(src.name, this.icons.record);
+			this.player = player;
+
+			this.currentSource = src;
+			this.update();
 
 			this.player.node.connect(this.gainNode);
 
 			this.autoplay && this.play();
 
-			this.emit('source', this.player.node, url);
-		})
-		.on('error', e => this.error(e))
-		.on('ended', e => {
-			//FIXME
-			// this.next();
+			this.emit('source', this.player.node, src);
+		}).on('error', (err) => {
+			this.restoreState();
+			this.error(err);
+		}).on('end', () => {
+			//FIXME: tail next track
+			this.pause()
 		});
 
 	}
 
 	//soundcloud
+	//FIXME: recognize straight stream API url
 	else if (/soundcloud/.test(src)) {
 		this.saveState();
 
@@ -564,6 +569,39 @@ AppAudio.prototype.setSource = function (src) {
 				setSoundcloud(json);
 			});
 			return this;
+		}
+
+		//mobile soundcloud has a bit more specific routine
+		else {
+			xhr({
+				uri: `https://api.soundcloud.com/resolve.json?client_id=${this.token.soundcloud || this.token}&url=${src}&format=json`,
+				method: 'GET'
+			}, () => {
+				xhr({
+					uri: `https://api.soundcloud.com/resolve.json?client_id=${this.token.soundcloud || this.token}&url=${src}&_status_code_map[302]=200&format=json`,
+					method: 'GET'
+				}, function (err, response) {
+					if (err) {
+						this.restoreState();
+						return this.error(err, cb);
+					}
+
+					let obj = JSON.parse(response.body);
+					xhr({
+						uri: obj.location,
+						method: 'GET'
+					}, function (err, response) {
+						if (err) {
+							this.restoreState();
+							return this.error(err, cb);
+						}
+
+						let json = JSON.parse(response.body);
+
+						setSoundcloud(json);
+					});
+				});
+			});
 		}
 
 
@@ -628,7 +666,6 @@ AppAudio.prototype.setSource = function (src) {
 			this.error('Bad URL');
 			return this;
 		}
-
 
 		this.saveState();
 		this.info(`Loading ${src}`, this.icons.loading);
