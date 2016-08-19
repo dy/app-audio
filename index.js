@@ -340,9 +340,7 @@ AppAudio.prototype.init = function init (opts) {
 			dragleave(e);
 
 			var dt = e.dataTransfer;
-			// that.setSource(dt.files, () => {
-				//that.restoreState();
-			// });
+			that.setSource(dt.files);
 		}, false);
 
 		this.container.addEventListener('dragenter', dragenter);
@@ -506,17 +504,15 @@ AppAudio.prototype.setSource = function (src) {
 			return this;
 		}
 
-		this.nextSources = list;
+		this.nextSources = list.slice(1);
 
-		return this.setSource(this.nextSources[0]);
+		return this.setSource(list[0]);
 	}
 
 	//single file instance
 	if (src instanceof File) {
 		let url = URL.createObjectURL(src);
-
 		this.saveState();
-
 
 		let player = new Player(url, {
 			context: this.context,
@@ -540,8 +536,12 @@ AppAudio.prototype.setSource = function (src) {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
-			//FIXME: tail next track
-			this.pause()
+			this.pause();
+
+			let src = this.nextSources.shift();
+			if (src) {
+				this.setSource(src);
+			}
 		});
 
 	}
@@ -630,7 +630,6 @@ AppAudio.prototype.setSource = function (src) {
 				if (e === 0) return;
 				that.info(`Loading ${titleHtml}`, that.icons.loading)
 			}).on('load', () => {
-
 				that.reset();
 
 				that.player = player;
@@ -652,8 +651,12 @@ AppAudio.prototype.setSource = function (src) {
 				that.restoreState();
 				that.error(err);
 			}).on('end', () => {
-				//FIXME: tail next track
-				that.pause()
+				that.pause();
+
+				let src = this.nextSources.shift();
+				if (src) {
+					this.setSource(src);
+				}
 			});
 		}
 
@@ -696,13 +699,13 @@ AppAudio.prototype.setSource = function (src) {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
-			//FIXME: tail next track
-			this.pause()
+			this.pause();
+
+			let src = this.nextSources.shift();
+			if (src) {
+				this.setSource(src);
+			}
 		});
-	}
-
-	function createPlayer () {
-
 	}
 
 	return this;
@@ -787,7 +790,6 @@ AppAudio.prototype.reset = function () {
 	this.pause();
 
 	//reset sources list
-	this.nextSources = [];
 	this.currentSource = null;
 
 	//reset UI
