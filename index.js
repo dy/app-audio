@@ -21,12 +21,10 @@ const pad = require('left-pad');
 const capfirst = require('capitalize-first-letter');
 require('get-float-time-domain-data');
 
-
 module.exports = AppAudio;
 
 
 css(fs.readFileSync(__dirname + '/index.css', 'utf-8'));
-
 
 inherits(AppAudio, Emitter);
 
@@ -44,7 +42,7 @@ function AppAudio (opts) {
 AppAudio.prototype.paste = true;
 
 //Allow dropping files to browser
-AppAudio.prototype.dragAndDrop = true;
+AppAudio.prototype.dragAndDrop = !isMobile;
 
 //Show play/payse buttons
 AppAudio.prototype.play = true;
@@ -74,7 +72,7 @@ AppAudio.prototype.mic = !!(navigator.mediaDevices || navigator.getUserMedia || 
 AppAudio.prototype.soundcloud = true;
 
 //Autostart play
-AppAudio.prototype.autoplay = !isMobile;
+AppAudio.prototype.autoplay = true;
 
 //Repeat track[s] list after end
 AppAudio.prototype.loop = true;
@@ -83,7 +81,7 @@ AppAudio.prototype.loop = true;
 AppAudio.prototype.progress = true;
 
 //Save/load last track
-AppAudio.prototype.save = true;
+AppAudio.prototype.save = !isMobile;
 
 //Display icons
 AppAudio.prototype.icon = true;
@@ -231,7 +229,7 @@ AppAudio.prototype.init = function init (opts) {
 	//init input
 	this.inputEl.addEventListener('input', e => {
 		this.testEl.innerHTML = this.inputEl.value;
-		this.inputEl.style.width = getComputedStyle(this.testEl).width;
+		this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
 	});
 
 	//init soundcloud
@@ -355,6 +353,18 @@ AppAudio.prototype.init = function init (opts) {
 		let title;
 		let that = this;
 
+		let dragleave = function (e) {
+			count--;
+
+			//non-zero count means were still inside
+			if (count) return;
+
+			count = 0;
+			that.container.removeEventListener('dragleave', dragleave);
+			that.container.classList.remove('aa-dragover');
+			that.restoreState();
+		}
+
 		this.dropEl = document.createElement('div');
 		this.dropEl.className = 'aa-drop';
 		this.container.appendChild(this.dropEl);
@@ -377,10 +387,7 @@ AppAudio.prototype.init = function init (opts) {
 			that.set(dt.files);
 		}, false);
 
-		this.container.addEventListener('dragenter', dragenter);
-
-
-		function dragenter (e) {
+		this.container.addEventListener('dragenter', e => {
 			count++;
 
 			if (count > 1) return;
@@ -393,18 +400,7 @@ AppAudio.prototype.init = function init (opts) {
 
 			that.saveState();
 			that.info(items.length < 2 ? `Drop audio file` : `Drop audio files`, that.icons.record);
-		}
-		function dragleave (e) {
-			count--;
-
-			//non-zero count means were still inside
-			if (count) return;
-
-			count = 0;
-			that.container.removeEventListener('dragleave', dragleave);
-			that.container.classList.remove('aa-dragover');
-			that.restoreState();
-		}
+		});
 	}
 
 	//hack to set input element width
@@ -431,6 +427,7 @@ AppAudio.prototype.init = function init (opts) {
 
 	//load last source
 	if (this.save) this.loadSources();
+	this.update();
 
 	return this;
 };
@@ -461,10 +458,10 @@ AppAudio.prototype.update = function update (opts) {
 	//apply color
 	this.element.style.color = this.color;
 	this.progressEl.style.color = this.color;
-	this.dropEl.style.color = this.color;
+	if (this.dragAndDrop) this.dropEl.style.color = this.color;
 
 	//update width
-	this.inputEl.style.width = getComputedStyle(this.testEl).width;
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
 
 	//update recent list
 	this.recentEl.innerHTML = '';
@@ -518,7 +515,7 @@ AppAudio.prototype.set = function (src) {
 		this.micNode = this.context.createMediaStreamSource(src);
 		this.micNode.connect(this.gainNode);
 
-		this.autoplay && this.play();
+		this.autoplay ? this.play() : this.pause();
 
 		this.emit('source', this.micNode, this.currentSource);
 
@@ -572,7 +569,7 @@ AppAudio.prototype.set = function (src) {
 
 			this.player.node.connect(this.gainNode);
 
-			this.autoplay && this.play();
+			this.autoplay ? this.play() : this.pause();
 
 			this.emit('source', this.player.node, src);
 		}).on('error', (err) => {
@@ -604,7 +601,7 @@ AppAudio.prototype.set = function (src) {
 
 				let json = JSON.parse(response.body);
 
-				setSoundcloud(json);
+				setSoundcloud(json, token);
 			});
 			return this;
 		}
@@ -612,11 +609,11 @@ AppAudio.prototype.set = function (src) {
 		//mobile soundcloud has a bit more specific routine
 		else {
 			xhr({
-				uri: `https://api.soundcloud.com/resolve.json?client_id=${this.token.soundcloud || this.token}&url=${src}&format=json`,
+				uri: `https://api.soundcloud.com/resolve.json?client_id=${token}&url=${src}&format=json`,
 				method: 'GET'
 			}, () => {
 				xhr({
-					uri: `https://api.soundcloud.com/resolve.json?client_id=${this.token.soundcloud || this.token}&url=${src}&_status_code_map[302]=200&format=json`,
+					uri: `https://api.soundcloud.com/resolve.json?client_id=${token}&url=${src}&_status_code_map[302]=200&format=json`,
 					method: 'GET'
 				}, function (err, response) {
 					if (err) {
@@ -636,61 +633,9 @@ AppAudio.prototype.set = function (src) {
 
 						let json = JSON.parse(response.body);
 
-						setSoundcloud(json);
+						setSoundcloud(json, token);
 					});
 				});
-			});
-		}
-
-
-		function setSoundcloud (json) {
-			let streamUrl = json.stream_url + '?client_id=' + token;
-
-			//if list of tracks - setup first, save others for next
-			if (json.tracks) {
-				that.nextSources = json.tracks.slice(1).map(t => t.permalink_url);
-				// that.addRecent(json.title, json.permalink_url);
-				return that.set(json.tracks[0].permalink_url);
-			}
-
-			let titleHtml = json.title;
-			if (json.user) {
-				titleHtml += ` by ${json.user.username}`;
-			}
-
-			let player = new Player(streamUrl, {
-				context: that.context,
-				loop: that.loop,
-				buffer: isMobile,
-				crossOrigin: 'Anonymous'
-			}).on('decoding', () => {
-				that.info(`Decoding ${titleHtml}`, that.icons.loading);
-			}).on('progress', (e) => {
-				if (e === 0) return;
-				that.info(`Loading ${titleHtml}`, that.icons.loading)
-			}).on('load', () => {
-				that.reset();
-
-				that.player = player;
-
-				that.currentSource = src;
-
-				that.addRecent(titleHtml, src);
-				that.save && that.saveSources();
-				that.update();
-
-				that.info(titleHtml, that.icons.soundcloud);
-
-				that.player.node.connect(that.gainNode);
-
-				that.autoplay && that.play();
-
-				that.emit('source', that.player.node, streamUrl);
-			}).on('error', (err) => {
-				that.restoreState();
-				that.error(err);
-			}).on('end', () => {
-				that.playNext();
 			});
 		}
 
@@ -710,7 +655,7 @@ AppAudio.prototype.set = function (src) {
 		this.save && this.saveSources();
 		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
 		this.oscNode.connect(this.gainNode);
-		this.autoplay && this.play();
+		this.autoplay ? this.play() : this.pause();
 		this.emit('source', this.oscNode, src);
 
 	}
@@ -732,7 +677,7 @@ AppAudio.prototype.set = function (src) {
 		this.save && this.saveSources();
 		this.info('Noise', this.icons.noise);
 		this.bufNode.connect(this.gainNode);
-		this.autoplay && this.play();
+		this.autoplay ? this.play() : this.pause();
 		this.emit('source', this.bufNode, src);
 	}
 
@@ -762,13 +707,66 @@ AppAudio.prototype.set = function (src) {
 
 			this.info(src, this.icons.url);
 			this.player.node.connect(this.gainNode);
-			this.autoplay && this.play();
+			this.autoplay ? this.play() : this.pause();
 			this.emit('source', this.player.node, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
 		}).on('end', () => {
 			this.playNext();
+		});
+	}
+
+	function setSoundcloud (json) {
+		let token = that.token.soundcloud || that.token;
+
+		let streamUrl = json.stream_url + '?client_id=' + token;
+
+		//if list of tracks - setup first, save others for next
+		if (json.tracks) {
+			that.nextSources = json.tracks.slice(1).map(t => t.permalink_url);
+			// that.addRecent(json.title, json.permalink_url);
+			return that.set(json.tracks[0].permalink_url);
+		}
+
+		let titleHtml = json.title;
+		if (json.user) {
+			titleHtml += ` by ${json.user.username}`;
+		}
+
+		let player = new Player(streamUrl, {
+			context: that.context,
+			loop: that.loop,
+			buffer: isMobile,
+			crossOrigin: 'Anonymous'
+		}).on('decoding', () => {
+			that.info(`Decoding ${titleHtml}`, that.icons.loading);
+		}).on('progress', (e) => {
+			if (e === 0) return;
+			that.info(`Loading ${titleHtml}`, that.icons.loading)
+		}).on('load', () => {
+			that.reset();
+
+			that.player = player;
+
+			that.currentSource = src;
+
+			that.addRecent(titleHtml, src);
+			that.save && that.saveSources();
+			that.update();
+
+			that.info(titleHtml, that.icons.soundcloud);
+
+			that.player.node.connect(that.gainNode);
+
+			that.autoplay ? that.play() : that.pause();
+
+			that.emit('source', that.player.node, streamUrl);
+		}).on('error', (err) => {
+			that.restoreState();
+			that.error(err);
+		}).on('end', () => {
+			that.playNext();
 		});
 	}
 
@@ -966,7 +964,7 @@ AppAudio.prototype.info = function info (msg, icon) {
 	this.contentEl.title = this.inputEl.value;
 
 	this.testEl.innerHTML = this.inputEl.value;
-	this.inputEl.style.width = getComputedStyle(this.testEl).width;
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
 
 	return this;
 };

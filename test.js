@@ -2,6 +2,7 @@ const Audio = require('./');
 const css = require('insert-styles');
 const palettes = require('nice-color-palettes');
 const Settings = require('settings-panel');
+const isMobile = require('is-mobile')();
 
 
 // prepare mobile
@@ -10,18 +11,23 @@ meta.setAttribute('name', 'viewport')
 meta.setAttribute('content', 'width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=0')
 document.head.appendChild(meta);
 
-
 css(`
 	body {
 		margin: 0;
-		background: #D38312; /* fallback for old browsers */
-		background: -webkit-linear-gradient(to left, #D38312 , #A83279); /* Chrome 10-25, Safari 5.1-6 */
-		background: linear-gradient(to left, #D38312 , #A83279); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+		background: #D38312;
+		background: -webkit-linear-gradient(to left, #D38312 , #A83279);
+		background: linear-gradient(to left, #D38312 , #A83279);
 		overflow: hidden;
 	}
 	.app-audio {
 		font-family: "Roboto", sans-serif;
 		font-weight: 400;
+	}
+
+	@media (max-width:640px) {
+		.settings-panel {
+			display: none;
+		}
 	}
 `);
 
@@ -34,79 +40,82 @@ let audio = new Audio({
 });
 
 //init settings panel
-let panel = new Settings({
-	// settings: {
-	// 	options: ['play', 'autoplay', 'loop', 'icon', 'progress'],
-	// 	value: ['play', 'autoplay', 'loop', 'icon'].filter(name => audio[name]),
-	// 	change: v => {
-	// 		audio.update({
-	// 			loop: v.indexOf('loop') >= 0
-	// 		});
-	// 	}
-	// },
-	sources: {
-		value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
-		change: v => {
-			audio.update({
-				file: v.indexOf('file') >= 0,
-				url: v.indexOf('url') >= 0,
-				soundcloud: v.indexOf('soundcloud') >= 0,
-				mic: v.indexOf('mic') >= 0,
-				signal: v.indexOf('signal') >= 0,
-				recent: v.indexOf('recent') >= 0,
-			});
+if (!isMobile) {
+	let panel = new Settings({
+		// settings: {
+		// 	options: ['play', 'autoplay', 'loop', 'icon', 'progress'],
+		// 	value: ['play', 'autoplay', 'loop', 'icon'].filter(name => audio[name]),
+		// 	change: v => {
+		// 		audio.update({
+		// 			loop: v.indexOf('loop') >= 0
+		// 		});
+		// 	}
+		// },
+		sources: {
+			//FIXME: detect set from audio
+			value: ['file', 'url', 'soundcloud', 'mic', 'signal', 'recent'],
+			change: v => {
+				audio.update({
+					file: v.indexOf('file') >= 0,
+					url: v.indexOf('url') >= 0,
+					soundcloud: v.indexOf('soundcloud') >= 0,
+					mic: v.indexOf('mic') >= 0,
+					signal: v.indexOf('signal') >= 0,
+					recent: v.indexOf('recent') >= 0,
+				});
+			}
+		},
+		color: {
+			type: 'color',
+			value: audio.color,
+			change: v => {
+				audio.update({color: v});
+			}
+		},
+
+		// log: {
+		// 	type: 'textarea'
+		// },
+
+		hr: {label: false, order: 14, content: '<hr/>'},
+
+		reset: {
+			type: 'button',
+			order: 17,
+			style: 'width: 33.33%;',
+			input: () => audio.reset()
+		},
+		pause: {
+			type: 'button',
+			order: 15,
+			style: 'width: 33.33%;',
+			input: () => audio.pause()
+		},
+		playBtn: {
+			label: 'Play',
+			type: 'button',
+			order: 16,
+			style: 'width: 33.33%;',
+			input: () => audio.play()
 		}
-	},
-	color: {
-		type: 'color',
-		value: audio.color,
-		change: v => {
-			audio.update({color: v});
-		}
-	},
-
-	// log: {
-	// 	type: 'textarea'
-	// },
-
-	hr: {label: false, order: 14, content: '<hr/>'},
-
-	reset: {
-		type: 'button',
-		order: 17,
-		style: 'width: 33.33%;',
-		input: () => audio.reset()
-	},
-	pause: {
-		type: 'button',
-		order: 15,
-		style: 'width: 33.33%;',
-		input: () => audio.pause()
-	},
-	playBtn: {
-		label: 'Play',
-		type: 'button',
-		order: 16,
-		style: 'width: 33.33%;',
-		input: () => audio.play()
-	}
-}, {
-	title: `<a href="https://github.com/dfcreative/app-audio" title="app-audio in github">app-audio <span style="position: absolute; margin-left: .15em; margin-top: -.25em; width: .75em; height: .75em;">${ghIcon}</span></a>`,
-	theme: require('settings-panel/theme/dragon'),
-	style: 'width: 240px; position: absolute; top: 0; right: 0;',
-	palette: ['#1C0515', 'white']
-});
-panel.element.addEventListener('click', (e) => {
-	e.stopPropagation()
-});
+	}, {
+		title: `<a href="https://github.com/dfcreative/app-audio" title="app-audio in github">app-audio <span style="position: absolute; margin-left: .15em; margin-top: -.25em; width: .75em; height: .75em;">${ghIcon}</span></a>`,
+		theme: require('settings-panel/theme/dragon'),
+		style: 'width: 240px; position: absolute; top: 0; right: 0;',
+		palette: ['#1C0515', 'white']
+	});
+	panel.element.addEventListener('click', (e) => {
+		e.stopPropagation()
+	});
 
 
-// audio.on('play', function () {
-// 	panel.set('log', panel.get('log') + 'play\n');
-// });
-// audio.on('pause', function () {
-// 	panel.set('log', panel.get('log') + 'pause\n');
-// });
-// audio.on('reset', function () {
-// 	panel.set('log', panel.get('log') + 'reset\n');
-// });
+	// audio.on('play', function () {
+	// 	panel.set('log', panel.get('log') + 'play\n');
+	// });
+	// audio.on('pause', function () {
+	// 	panel.set('log', panel.get('log') + 'pause\n');
+	// });
+	// audio.on('reset', function () {
+	// 	panel.set('log', panel.get('log') + 'reset\n');
+	// });
+}
