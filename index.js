@@ -750,7 +750,7 @@ AppAudio.prototype.set = function (src) {
 		let player = new Player(streamUrl, {
 			context: that.context,
 			loop: that.loop,
-			buffer: !isMobile,
+			buffer: false,
 			crossOrigin: 'Anonymous'
 		}).on('decoding', () => {
 			that.info(`Decoding ${titleHtml}`, that.icons.loading);

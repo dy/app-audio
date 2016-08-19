@@ -96,7 +96,7 @@ body.app-audio-container {
 	font-weight: bold;
 	min-width: 2em;
 	text-overflow: ellipsis;
-	max-width: 40vw;
+	max-width: 320px;
 	overflow: hidden;
 }
 @media (max-width: 640px) {
