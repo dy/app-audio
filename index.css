@@ -101,7 +101,7 @@ body.app-audio-container {
 }
 @media (max-width: 640px) {
 	.aa-input {
-		max-width: 80vw;
+		max-width: calc(100vw - 7rem);
 	}
 }
 .aa-button {
