@@ -17,7 +17,7 @@ const isUrl = require('is-url');
 const isObject = require('is-plain-obj');
 const qs = require('querystring');
 const Player = require('web-audio-player');
-const alpha = require('color-alpha');
+const pad = require('left-pad');
 require('get-float-time-domain-data');
 
 
@@ -323,6 +323,22 @@ AppAudio.prototype.init = function init (opts) {
 	this.progressEl = document.createElement('div');
 	this.progressEl.className = 'aa-progress';
 	this.container.appendChild(this.progressEl);
+	this.progressEl.style.width = 0;
+
+	setInterval(() => {
+		let currentTime = this.player && this.player.currentTime || this.player && this.player.element && this.player.element.currentTime || 0;
+
+		if (currentTime) {
+			this.progressEl.style.width = ((currentTime / this.player.duration * 100) || 0) + '%';
+			this.progressEl.setAttribute('title', `${formatTime(currentTime)} / ${formatTime(this.player.duration)} played`);
+		}
+		else {
+			this.progressEl.style.width = 0;
+		}
+	}, 200);
+	function formatTime (time) {
+		return pad((time / 60)|0, 2, 0) + ':' + pad((time % 60)|0, 2, 0);
+	}
 
 	//create drag n drop
 	if (this.dragAndDrop) {
@@ -690,7 +706,6 @@ AppAudio.prototype.set = function (src) {
 			this.reset();
 
 			this.player = player;
-
 			this.currentSource = src;
 			this.addRecent(src, src);
 			this.save && this.saveSources();

@@ -115,7 +115,7 @@ body.app-audio-container {
 	left: 0;
 	height: .2rem;
 	background: currentColor;
-	transition: .1s linear width;
+	transition: .2s linear width;
 	z-index: 999;
 }
 
