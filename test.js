@@ -37,7 +37,7 @@ let ghIcon = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink=
 //create audio
 let audio = new Audio({
 	color: 'white',
-	source: 'https://soundcloud.com/pacomusic/sets/p-a-c-o-return-of-the-jaded',
+	source: 'https://soundcloud.com/return-of-the-jaded/return-of-the-jaded-paco-feat-shyam-deamons-original-mix?in=pacomusic/sets/p-a-c-o-return-of-the-jaded',
 	// sources: [],
 	save: false
 });
