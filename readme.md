@@ -72,12 +72,18 @@ progress: true,
 //Save/load tracks to sessionStorage
 save: true,
 
+//Show list of recent tracks
+recent: true,
+
+//Enable drag and drop files
+dragAndDrop: true,
+
 //Default color
-color: 'black'
+color: 'black',
 ```
 
 </details>
-<details><summary>**`appAudio.set(source)`**</summary>
+<details><summary>**`appAudio.set(source);`**</summary>
 
 Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud URL, list of URLs, `MediaStream` etc.
 
