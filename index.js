@@ -530,7 +530,7 @@ AppAudio.prototype.set = function (src) {
 
 		this.autoplay ? this.play() : this.pause();
 
-		this.emit('source', this.micNode, this.currentSource);
+		this.emit('ready', this.micNode, this.currentSource);
 
 		return this;
 	}
@@ -585,7 +585,7 @@ AppAudio.prototype.set = function (src) {
 
 			this.autoplay ? this.play() : this.pause();
 
-			this.emit('source', this.player.node, src);
+			this.emit('ready', this.player.node, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -672,7 +672,7 @@ AppAudio.prototype.set = function (src) {
 		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
 		this.oscNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('source', this.oscNode, src);
+		this.emit('ready', this.oscNode, src);
 
 	}
 	else if (/noise/.test(src)) {
@@ -694,7 +694,7 @@ AppAudio.prototype.set = function (src) {
 		this.info('Noise', this.icons.noise);
 		this.bufNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('source', this.bufNode, src);
+		this.emit('ready', this.bufNode, src);
 	}
 
 	//url
@@ -724,7 +724,7 @@ AppAudio.prototype.set = function (src) {
 			this.info(src, this.icons.url);
 			this.player.node.connect(this.gainNode);
 			this.autoplay ? this.play() : this.pause();
-			this.emit('source', this.player.node, src);
+			this.emit('ready', this.player.node, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -776,7 +776,7 @@ AppAudio.prototype.set = function (src) {
 
 			that.autoplay ? that.play() : that.pause();
 
-			that.emit('source', that.player.node, streamUrl);
+			that.emit('ready', that.player.node, streamUrl);
 		}).on('error', (err) => {
 			that.restoreState();
 			that.error(err);
