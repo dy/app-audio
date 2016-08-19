@@ -82,27 +82,6 @@ color: 'black',
 ```
 
 </details>
-<details><summary>**`appAudio.set(source);`**</summary>
-
-Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud URL, list of URLs, `MediaStream` etc.
-
-</details>
-<details><summary>**`appAudio.play();`**</summary>
-
-Play selected source. Other playback methods:
-
-```js
-//pause current source, for mic - mute output
-appAudio.pause();
-
-//reset current source, stop playback
-appAudio.reset();
-
-//play next track, if there are multiple tracks
-appAudio.playNext();
-```
-
-</details>
 <details><summary>**`appAudio.on(event, callback);`**</summary>
 
 Bind event callback. Available events:
@@ -122,6 +101,27 @@ appAudio.on('pause', (audioNode) => {});
 
 //whenever reset is called
 appAudio.on('reset', () => {});
+```
+
+</details>
+<details><summary>**`appAudio.set(source);`**</summary>
+
+Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud URL, list of URLs, `MediaStream` etc.
+
+</details>
+<details><summary>**`appAudio.play();`**</summary>
+
+Play selected source. Other playback methods:
+
+```js
+//pause current source, for mic - mute output
+appAudio.pause();
+
+//reset current source, stop playback
+appAudio.reset();
+
+//play next track, if there are multiple tracks
+appAudio.playNext();
 ```
 
 </details>
