@@ -37,6 +37,11 @@ function AppAudio (opts) {
 	this.set(this.source);
 }
 
+//Default source
+AppAudio.prototype.source = '';
+
+//List of default sources
+AppAudio.prototype.sources = [];
 
 //Observe paste event
 AppAudio.prototype.paste = true;
@@ -72,7 +77,7 @@ AppAudio.prototype.mic = !!(navigator.mediaDevices || navigator.getUserMedia || 
 AppAudio.prototype.soundcloud = true;
 
 //Autostart play
-AppAudio.prototype.autoplay = true;
+AppAudio.prototype.autoplay = !isMobile;
 
 //Repeat track[s] list after end
 AppAudio.prototype.loop = true;
@@ -426,7 +431,15 @@ AppAudio.prototype.init = function init (opts) {
 	this.reset();
 
 	//load last source
-	if (this.save) this.loadSources();
+	if (this.save) {
+		this.loadSources();
+	}
+
+	//load predefined source
+	else if (this.source) {
+		this.set(this.source);
+	}
+
 	this.update();
 
 	return this;
@@ -737,7 +750,7 @@ AppAudio.prototype.set = function (src) {
 		let player = new Player(streamUrl, {
 			context: that.context,
 			loop: that.loop,
-			buffer: isMobile,
+			buffer: !isMobile,
 			crossOrigin: 'Anonymous'
 		}).on('decoding', () => {
 			that.info(`Decoding ${titleHtml}`, that.icons.loading);
@@ -871,6 +884,7 @@ AppAudio.prototype.reset = function () {
 	//reset UI
 	this.playEl.innerHTML = this.icons.play;
 	this.buttonEl.setAttribute('hidden', true);
+	this.nextButtonEl.setAttribute('hidden', true);
 	this.info('', this.icons.eject);
 
 	//disconnect audio

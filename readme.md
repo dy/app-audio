@@ -35,6 +35,9 @@ Get app-audio constructor. It can also serve as a class.
 Create app-audio instance based off options:
 
 ```js
+//initial source
+source: null,
+
 //container to place UI
 container: document.body,
 
@@ -78,7 +81,7 @@ recent: true,
 dragAndDrop: true,
 
 //Default color
-color: 'black',
+color: 'black'
 ```
 
 </details>
