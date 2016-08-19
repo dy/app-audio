@@ -139,8 +139,14 @@ Update view or options, if required. Possible options are all the same as in the
 
 </details>
 
+## In the wild
+
+> [gl-waveform](https://dfcreative.github.io/gl-waveform)<br/>
+> [gl-spectrogram](https://dfcreative.github.io/gl-spectrogram)<br/>
+> [gl-spectrum](https://audio-lab.github.io/gl-spectrum)<br/>
+
 ## Credits
 
-## Related
+**[@mattdesl](https://github.com/mattdesl)** for [web-audio-player](https://github.com/jam3/web-audio-player) covering gotchas of playing web-audio.
 
-> [web-audio-player](https://github.com/jam3/web-audio-player) — player for audio assets in web-audio.<br/>
+Beautiful myself, who spent like a week on that, and another week before on [start-app](https://github.com/dfcreative/start-app).
