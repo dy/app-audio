@@ -1,8 +1,8 @@
-# app-audio [![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
+# app-audio [![unstable](http://badges.github.io/stability-badges/dist/unstable.svg)](http://github.com/badges/stability-badges)
 
 Get audio for your application, demo or tests.
 
-It will create a component with every possible audio source for web-audio-API, able to load an audio file, url, soundcloud url/stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop/pasting audio, list of recently played sources, playing queue, progress bar, looping etc.
+It will create a component with every possible audio source for Web Audio API - an audio file, url, soundcloud, microphone or primitive signal. Also it tackles play/stop/reset controls, drag-n-drop, recent tracks, queuing multiple tracks, saving to session storage, progress bar, looping etc.
 
 [![app-audio](https://raw.githubusercontent.com/audio-lab/app-audio/gh-pages/preview.png "app-audio")](http://audio-lab.github.io/app-audio/)
 
@@ -16,10 +16,9 @@ const createAudio = require('app-audio');
 
 let audioSrc = createAudio({
 	source: './my-audio.mp3'
-}).on('ready', () => {
-
+}).on('ready', (node, url) => {
+	node.connect(myAnalyzer);
 });
-
 ```
 
 <!-- [**`See in action`**](TODO requirebin) -->
