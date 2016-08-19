@@ -74,9 +74,6 @@ body.app-audio-container {
 	border-bottom-style: solid;
 	opacity: .95;
 }
-.aa-focus .aa-input {
-	/*box-shadow: 0 1px 6px 1px currentColor;*/
-}
 .aa-error:before {
 	opacity: 0;
 }
@@ -96,7 +93,7 @@ body.app-audio-container {
 	color: inherit;
 	pointer-events: none;
 	font-weight: bold;
-	min-width: 3em;
+	min-width: 2em;
 	text-overflow: ellipsis;
 	max-width: 40vw;
 	overflow: hidden;
@@ -205,7 +202,7 @@ body.app-audio-container {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.aa-item-short {
+.aa-item-signal {
 	display: inline-block;
 }
 .aa-item:hover:after {

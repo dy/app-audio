@@ -18,6 +18,7 @@ const isObject = require('is-plain-obj');
 const qs = require('querystring');
 const Player = require('web-audio-player');
 const pad = require('left-pad');
+const capfirst = require('capitalize-first-letter');
 require('get-float-time-domain-data');
 
 
@@ -120,8 +121,8 @@ AppAudio.prototype.icons = {
 	settings: fs.readFileSync(__dirname + '/image/settings.svg', 'utf8'),
 	github: fs.readFileSync(__dirname + '/image/github.svg', 'utf8'),
 	sine: fs.readFileSync(__dirname + '/image/sine.svg', 'utf8'),
-	saw: fs.readFileSync(__dirname + '/image/saw.svg', 'utf8'),
-	rectangle: fs.readFileSync(__dirname + '/image/rectangle.svg', 'utf8'),
+	sawtooth: fs.readFileSync(__dirname + '/image/saw.svg', 'utf8'),
+	square: fs.readFileSync(__dirname + '/image/rectangle.svg', 'utf8'),
 	triangle: fs.readFileSync(__dirname + '/image/triangle.svg', 'utf8'),
 	noise: fs.readFileSync(__dirname + '/image/noise.svg', 'utf8'),
 	whitenoise: fs.readFileSync(__dirname + '/image/whitenoise.svg', 'utf8')
@@ -190,11 +191,11 @@ AppAudio.prototype.init = function init (opts) {
 		<li class="aa-item aa-mic"><i class="aa-icon">${this.icons.mic}</i> Microphone</li>
 		</ul>
 		<ul class="aa-items aa-signal" data-title="Signal">
-			<li class="aa-item aa-item-short" title="Sine"><i class="aa-icon">${this.icons.sine}</i></li>
-			<li class="aa-item aa-item-short" title="Sawtooth"><i class="aa-icon">${this.icons.saw}</i></li>
-			<li class="aa-item aa-item-short" title="Triangle"><i class="aa-icon">${this.icons.triangle}</i></li>
-			<li class="aa-item aa-item-short" title="Rectangle"><i class="aa-icon">${this.icons.rectangle}</i></li>
-			<li class="aa-item aa-item-short" title="White noise"><i class="aa-icon">${this.icons.whitenoise}</i></li>
+			<li class="aa-item aa-item-signal" title="Sine" data-source="sine"><i class="aa-icon">${this.icons.sine}</i></li>
+			<li class="aa-item aa-item-signal" title="Sawtooth" data-source="sawtooth"><i class="aa-icon">${this.icons.sawtooth}</i></li>
+			<li class="aa-item aa-item-signal" title="Triangle" data-source="triangle"><i class="aa-icon">${this.icons.triangle}</i></li>
+			<li class="aa-item aa-item-signal" title="Rectangle" data-source="square"><i class="aa-icon">${this.icons.square}</i></li>
+			<li class="aa-item aa-item-signal" title="White noise" data-source="whitenoise"><i class="aa-icon">${this.icons.whitenoise}</i></li>
 		</ul>
 		<ul class="aa-items aa-next" data-title="Next" hidden></ul>
 		<ul class="aa-items aa-recent" data-title="Recent" hidden></ul>
@@ -319,7 +320,15 @@ AppAudio.prototype.init = function init (opts) {
 		this.set(src);
 	});
 
-	//create progress
+	//init signal
+	this.signalEl.addEventListener('click', e => {
+		let target = e.target.closest('.aa-item');
+		if (!target) return;
+		let src = target.getAttribute('data-source');
+		this.set(src);
+	});
+
+	//init progress
 	this.progressEl = document.createElement('div');
 	this.progressEl.className = 'aa-progress';
 	this.container.appendChild(this.progressEl);
@@ -418,10 +427,10 @@ AppAudio.prototype.init = function init (opts) {
 
 	this.container.appendChild(this.testEl);
 
+	this.reset();
+
 	//load last source
 	if (this.save) this.loadSources();
-
-	this.reset();
 
 	return this;
 };
@@ -432,6 +441,7 @@ AppAudio.prototype.update = function update (opts) {
 
 	//hide/unhide proper elements
 	this.icon ? this.iconEl.removeAttribute('hidden') : this.iconEl.setAttribute('hidden', true);
+	this.progress ? this.progressEl.removeAttribute('hidden') : this.progressEl.setAttribute('hidden', true);
 	this.file ? this.fileEl.removeAttribute('hidden') : this.fileEl.setAttribute('hidden', true);
 	this.url ? this.urlEl.removeAttribute('hidden') : this.urlEl.setAttribute('hidden', true);
 	this.signal ? this.signalEl.removeAttribute('hidden') : this.signalEl.setAttribute('hidden', true);
@@ -663,7 +673,7 @@ AppAudio.prototype.set = function (src) {
 
 				that.player = player;
 
-				that.currentSource = streamUrl;
+				that.currentSource = src;
 
 				that.addRecent(titleHtml, src);
 				that.save && that.saveSources();
@@ -685,6 +695,45 @@ AppAudio.prototype.set = function (src) {
 		}
 
 		return this;
+	}
+
+	//signal nodes
+	else if (/sin|tri|saw|rect|squ/.test(src)) {
+		this.reset();
+
+		this.oscNode = this.context.createOscillator();
+		this.oscNode.type = /sin/.test(src) ? 'sine' : /tri/.test(src) ? 'triangle' : /rect|squ/.test(src) ? 'square' : 'sawtooth';
+		this.oscNode.frequency.value = 440;
+		this.oscNode.start();
+
+		this.currentSource = src;
+		this.save && this.saveSources();
+		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
+		this.oscNode.connect(this.gainNode);
+		this.autoplay && this.play();
+		this.emit('source', this.oscNode, src);
+
+	}
+	else if (/noise/.test(src)) {
+		this.reset();
+		let buffer = this.context.createBuffer(2, 44100*2, this.context.sampleRate);
+		for (let channel = 0; channel < 2; channel++){
+			let data = buffer.getChannelData(channel);
+			for (let i = 0; i < 44100*2; i++) {
+				data[i] = Math.random() * 2 - 1;
+			}
+		}
+		this.bufNode = this.context.createBufferSource();
+		this.bufNode.buffer = buffer;
+		this.bufNode.loop = true;
+		this.bufNode.start();
+
+		this.currentSource = src;
+		this.save && this.saveSources();
+		this.info('Noise', this.icons.noise);
+		this.bufNode.connect(this.gainNode);
+		this.autoplay && this.play();
+		this.emit('source', this.bufNode, src);
 	}
 
 	//url
@@ -712,11 +761,8 @@ AppAudio.prototype.set = function (src) {
 			this.update();
 
 			this.info(src, this.icons.url);
-
 			this.player.node.connect(this.gainNode);
-
 			this.autoplay && this.play();
-
 			this.emit('source', this.player.node, src);
 		}).on('error', (err) => {
 			this.restoreState();
@@ -752,7 +798,8 @@ AppAudio.prototype.saveSources = function () {
 
 	this.storage.setItem(this.storageKey, JSON.stringify({
 		recentSources: this.recentSources,
-		recentTitles: this.recentTitles
+		recentTitles: this.recentTitles,
+		current: this.currentSource
 	}));
 
 	return this;
@@ -767,8 +814,8 @@ AppAudio.prototype.loadSources = function () {
 	if (recentSources && recentSources.length) {
 		this.recentSources = recentSources;
 		this.recentTitles = recentTitles;
-		this.set(this.recentSources[0]);
 	}
+	this.set(current);
 
 	return this;
 }
@@ -835,6 +882,14 @@ AppAudio.prototype.reset = function () {
 	if (this.micNode) {
 		this.micNode.disconnect();
 		this.micNode = null;
+	}
+	if (this.bufNode) {
+		this.bufNode.disconnect();
+		this.bufNode = null;
+	}
+	if (this.oscNode) {
+		this.oscNode.disconnect();
+		this.oscNode = null;
 	}
 
 	this.emit('reset', this.micNode);

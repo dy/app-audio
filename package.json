@@ -39,6 +39,7 @@
   "dependencies": {
     "audio-context": "^0.1.0",
     "brfs": "^1.4.3",
+    "capitalize-first-letter": "^1.0.0",
     "color-alpha": "^1.0.0",
     "get-float-time-domain-data": "^0.1.0",
     "inherits": "^2.0.1",

@@ -36,7 +36,7 @@ let audio = new Audio({
 //init settings panel
 let panel = new Settings({
 	// settings: {
-	// 	options: ['play', 'autoplay', 'loop', 'icon'],
+	// 	options: ['play', 'autoplay', 'loop', 'icon', 'progress'],
 	// 	value: ['play', 'autoplay', 'loop', 'icon'].filter(name => audio[name]),
 	// 	change: v => {
 	// 		audio.update({
