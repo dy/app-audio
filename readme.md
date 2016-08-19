@@ -90,17 +90,18 @@ Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud UR
 </details>
 <details><summary>**`appAudio.play();`**</summary>
 
-Play selected source.
+Play selected source. Is also has additional playback methods:
 
-</details>
-<details><summary>**`appAudio.pause();`**</summary>
+```js
+//pause current source, for mic - mute output
+appAudio.pause();
 
-Pause current source, for mic mode will mute output.
+//reset current source, stop playback
+appAudio.reset();
 
-</details>
-<details><summary>**`appAudio.reset();`**</summary>
-
-Stop playing and reset selected source. Next tracks in queue will not be reset.
+//play next track, if there are multiple tracks
+appAudio.playNext();
+```
 
 </details>
 <details><summary>**`appAudio.on(event, callback);`**</summary>
@@ -110,15 +111,17 @@ Bind event callback. Available events:
 ```js
 //called whenever new source is set, like mic, file, signal etc.
 //source audioNode is passed as a first argument, so do connection routine here
-appAudio.on('source', (audioNode) => {});
+appAudio.on('source', (audioNode, sourceUrl) => {
+	audioNode.connect(myAnalyzer);
+});
 
-//called whenever user pressed play
+//whenever play is pressed or called
 appAudio.on('play', (audioNode) => {});
 
-//called whenever user pressed pause
+//whenever pause is pressed or called
 appAudio.on('pause', (audioNode) => {});
 
-//called whenever user invoked reset
+//whenever reset is called
 appAudio.on('reset', () => {});
 ```
 
