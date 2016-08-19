@@ -1,7 +1,8 @@
 # app-audio [![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
 
-Audio for your application, demo or tests.
-It will create an audio source selector able to load an audio file, url, soundcloud stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop/pasting audio, list of recently played sources, playing queue, progress bar, looping etc.
+Get audio for your application, demo or tests.
+
+It will create a component with every possible audio source for web-audio-API, able to load an audio file, url, soundcloud url/stream, microphone input, signal or noise. Also it tackles play/stop/reset controls, drag-n-drop/pasting audio, list of recently played sources, playing queue, progress bar, looping etc.
 
 [![app-audio](https://raw.githubusercontent.com/audio-lab/app-audio/gh-pages/preview.png "app-audio")](http://audio-lab.github.io/app-audio/)
 
@@ -27,26 +28,19 @@ let audioSrc = createAudio({
 
 <details><summary>**`const createAudio = require('app-audio');`**</summary>
 
-Get app audio component class. It can serve both as a class or constructor function.
+Get app-audio constructor. It can also serve as a class.
 
 </details>
 <details><summary>**`let appAudio = createAudio(options);`**</summary>
 
-Create audio source instance based off options:
+Create app-audio instance based off options:
 
 ```js
 //container to place UI
 container: document.body,
 
-
-//Observe paste event
-paste: true,
-
-//Allow dropping files to browser
-dragAndDrop: true,
-
-//Show play/payse buttons
-play: true,
+//audio context to use
+context: require('audio-context'),
 
 //Enable file select
 file: true,
@@ -54,59 +48,56 @@ file: true,
 //Enable url input
 url: true,
 
-//Enable signal input
-signal: true,
+//Enable soundcloud input
+soundcloud: true,
 
-//Enable noise input
-noise: true,
+//Enable primitive signal input
+signal: true,
 
 //Enable mic input
 mic: true,
 
-//Enable soundcloud input
-soundcloud: true,
+//Show play/payse buttons
+play: true,
 
-//Autostart play
+//Start playing whenever source is selected
 autoplay: true,
 
-//Repeat track[s] list after end
+//Repeat track list after end
 loop: true,
 
-//Show progress indicator
+//Show progress indicator at the top of container
 progress: true,
 
-//Save/load last track
+//Save/load tracks to sessionStorage
 save: true,
-
-//Display icons
-icon: true,
 
 //Default color
 color: 'black'
 ```
 
 </details>
-<details><summary>**`appAudio.setSource(list)`**</summary>
+<details><summary>**`appAudio.set(source)`**</summary>
 
-Set source to play.
-
-</details>
-<details><summary>**`appAudio.play()`**</summary>
-
-Play current source.
+Set source to play. Source can be whether `File`, `FileList`, URL, soundcloud URL, list of URLs, `MediaStream` etc.
 
 </details>
-<details><summary>**`appAudio.pause()`**</summary>
+<details><summary>**`appAudio.play();`**</summary>
+
+Play selected source.
+
+</details>
+<details><summary>**`appAudio.pause();`**</summary>
 
 Pause current source, for mic mode will mute output.
 
 </details>
-<details><summary>**`appAudio.reset()`**</summary>
+<details><summary>**`appAudio.reset();`**</summary>
 
-Stop playing and reset current source.
+Stop playing and reset selected source. Next tracks in queue will not be reset.
 
 </details>
-<details><summary>**`appAudio.on(event, callback)`**</summary>
+<details><summary>**`appAudio.on(event, callback);`**</summary>
 
 Bind event callback. Available events:
 
@@ -126,19 +117,19 @@ appAudio.on('reset', () => {});
 ```
 
 </details>
-<details><summary>**`appAudio.show(data)`**</summary>
+<details><summary>**`appAudio.show(data);`**</summary>
 
-Show source menu.
-
-</details>
-<details><summary>**`appAudio.hide(data)`**</summary>
-
-Hide source menu.
+Open menu.
 
 </details>
-<details><summary>**`appAudio.update(options?)`**</summary>
+<details><summary>**`appAudio.hide(data);`**</summary>
 
-Update options, if required. Like, palette, grid type etc.
+Hide menu.
+
+</details>
+<details><summary>**`appAudio.update(options?);`**</summary>
+
+Update view or options, if required. Possible options are all the same as in the constructor.
 
 </details>
 

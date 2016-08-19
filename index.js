@@ -35,7 +35,7 @@ function AppAudio (opts) {
 
 	this.init(opts);
 
-	this.setSource(this.source);
+	this.set(this.source);
 }
 
 
@@ -271,14 +271,14 @@ AppAudio.prototype.init = function init (opts) {
 		let value = this.inputEl.value;
 		//to be called after blur
 		setTimeout(() => {
-			this.setSource(value);
+			this.set(value);
 		});
 	});
 
 	//init file
 	this.fileInputEl = this.dropdownEl.querySelector('.aa-file-input');
 	this.fileInputEl.addEventListener('change', e => {
-		this.setSource(this.fileInputEl.files);
+		this.set(this.fileInputEl.files);
 	});
 
 	//init mic
@@ -291,12 +291,12 @@ AppAudio.prototype.init = function init (opts) {
 
 		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 			navigator.mediaDevices.getUserMedia({audio: true, video: false})
-			.then(stream => this.setSource(stream)).catch((e) => this.error(e));
+			.then(stream => this.set(stream)).catch((e) => this.error(e));
 		}
 		else {
 			try {
 				navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia);
-				navigator.getUserMedia({audio: true, video: false}, stream => this.setSource(stream), (e) => this.error(e));
+				navigator.getUserMedia({audio: true, video: false}, stream => this.set(stream), (e) => this.error(e));
 			} catch (e) {
 				this.error(e);
 			}
@@ -308,7 +308,7 @@ AppAudio.prototype.init = function init (opts) {
 		let target = e.target.closest('.aa-item');
 		if (!target) return;
 		let src = target.getAttribute('data-source');
-		this.setSource(src);
+		this.set(src);
 	});
 
 	//init next list
@@ -316,7 +316,7 @@ AppAudio.prototype.init = function init (opts) {
 		let target = e.target.closest('.aa-item');
 		if (!target) return;
 		let src = target.getAttribute('data-source');
-		this.setSource(src);
+		this.set(src);
 	});
 
 	//create progress
@@ -349,7 +349,7 @@ AppAudio.prototype.init = function init (opts) {
 			dragleave(e);
 
 			var dt = e.dataTransfer;
-			that.setSource(dt.files);
+			that.set(dt.files);
 		}, false);
 
 		this.container.addEventListener('dragenter', dragenter);
@@ -465,7 +465,7 @@ AppAudio.prototype.update = function update (opts) {
 
 
 //set current source to play
-AppAudio.prototype.setSource = function (src) {
+AppAudio.prototype.set = function (src) {
 	let that = this;
 
 	//undefined source does not change current state
@@ -502,7 +502,7 @@ AppAudio.prototype.setSource = function (src) {
 	//list of sources should all be added to next
 	if (Array.isArray(src)) {
 		this.nextSources = src.slice(1);
-		this.setSource(src[0]);
+		this.set(src[0]);
 		return this;
 	}
 
@@ -523,7 +523,7 @@ AppAudio.prototype.setSource = function (src) {
 
 		this.nextSources = list.slice(1);
 
-		return this.setSource(list[0]);
+		return this.set(list[0]);
 	}
 
 	//single file instance
@@ -624,7 +624,7 @@ AppAudio.prototype.setSource = function (src) {
 			if (json.tracks) {
 				that.nextSources = json.tracks.slice(1).map(t => t.permalink_url);
 				// that.addRecent(json.title, json.permalink_url);
-				return that.setSource(json.tracks[0].permalink_url);
+				return that.set(json.tracks[0].permalink_url);
 			}
 
 			let titleHtml = json.title;
@@ -752,7 +752,7 @@ AppAudio.prototype.loadSources = function () {
 	if (recentSources && recentSources.length) {
 		this.recentSources = recentSources;
 		this.recentTitles = recentTitles;
-		this.setSource(this.recentSources[0]);
+		this.set(this.recentSources[0]);
 	}
 
 	return this;
@@ -794,7 +794,7 @@ AppAudio.prototype.playNext = function () {
 	let src = this.nextSources.shift();
 
 	if (src) {
-		this.setSource(src);
+		this.set(src);
 	}
 
 	return this;
