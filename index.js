@@ -1156,6 +1156,8 @@ AppAudio.prototype.set = function (src) {
 		var url = URL.createObjectURL(src);
 		this.saveState();
 
+		this.currentSource = src;
+
 		var player = new Player(url, {
 			context: this.context,
 			loop: this.loop,
@@ -1166,7 +1168,6 @@ AppAudio.prototype.set = function (src) {
 			this$1.info(src.name, this$1.icons.record);
 			this$1.player = player;
 
-			this$1.currentSource = src;
 			this$1.update();
 
 			this$1.player.node.connect(this$1.gainNode);
@@ -1190,6 +1191,8 @@ AppAudio.prototype.set = function (src) {
 
 		this.info('Connecting to soundcloud', this.icons.loading);
 		var token = this.token.soundcloud || this.token;
+
+		that.currentSource = src;
 
 		if (!isMobile) {
 			xhr({
@@ -1292,6 +1295,7 @@ AppAudio.prototype.set = function (src) {
 
 		this.saveState();
 		this.info(("Loading " + src), this.icons.loading);
+		this.currentSource = src;
 
 		var player$1 = new Player(src, {
 			context: this.context,
@@ -1302,7 +1306,6 @@ AppAudio.prototype.set = function (src) {
 			this$1.reset();
 
 			this$1.player = player$1;
-			this$1.currentSource = src;
 			this$1.addRecent(src, src);
 			this$1.save && this$1.saveSources();
 			this$1.update();
@@ -1351,7 +1354,6 @@ AppAudio.prototype.set = function (src) {
 
 			that.player = player;
 
-			that.currentSource = src;
 
 			that.addRecent(titleHtml, src);
 			that.save && that.saveSources();
