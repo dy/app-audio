@@ -33,7 +33,19 @@ function AppAudio (opts) {
 
 	this.init(opts);
 
-	this.set(this.source);
+	setTimeout(() => {
+		//load last source
+		if (this.save) {
+			this.loadSources();
+		}
+
+		//load predefined source
+		else if (this.source) {
+			this.set(this.source);
+		}
+
+		this.update();
+	});
 }
 
 //Default source
@@ -429,16 +441,6 @@ AppAudio.prototype.init = function init (opts) {
 
 	this.reset();
 
-	//load last source
-	if (this.save) {
-		this.loadSources();
-	}
-
-	//load predefined source
-	else if (this.source) {
-		this.set(this.source);
-	}
-
 	this.update();
 
 	return this;
@@ -671,7 +673,7 @@ AppAudio.prototype.set = function (src) {
 		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
 		this.oscNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('ready', this.oscNode, src);
+		this.emit('ready', this.gainNode, src);
 
 	}
 	else if (/noise/.test(src)) {
@@ -693,7 +695,7 @@ AppAudio.prototype.set = function (src) {
 		this.info('Noise', this.icons.whitenoise);
 		this.bufNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('ready', this.bufNode, src);
+		this.emit('ready', this.gainNode, src);
 	}
 
 	//url
