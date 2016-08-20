@@ -245,7 +245,7 @@ AppAudio.prototype.init = function init (opts) {
 	//init input
 	this.inputEl.addEventListener('input', e => {
 		this.testEl.innerHTML = this.inputEl.value;
-		this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
+		this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 2 + 'px';
 	});
 
 	//init soundcloud
@@ -420,20 +420,10 @@ AppAudio.prototype.init = function init (opts) {
 	}
 
 	//hack to set input element width
-	let style = getComputedStyle(this.inputEl);
 	this.testEl = document.createElement('div');
-	this.testEl.style.fontFamily = style.fontFamily;
-	this.testEl.style.fontSize = style.fontSize;
-	this.testEl.style.letterSpacing = style.letterSpacing;
-	this.testEl.style.textTransform = style.textTransform;
-	this.testEl.style.fontWeight = style.fontWeight;
-	this.testEl.style.fontStyle = style.fontStyle;
-	this.testEl.style.padding = style.padding;
-	this.testEl.style.margin = style.margin;
-	this.testEl.style.border = style.border;
 
 	this.testEl.style.whiteSpace = 'pre';
-	this.testEl.style.position = 'fixed';
+	this.testEl.style.position = 'absolute';
 	this.testEl.style.top = '-1000px';
 	this.testEl.style.left = '-1000px';
 
@@ -475,7 +465,18 @@ AppAudio.prototype.update = function update (opts) {
 	if (this.dragAndDrop) this.dropEl.style.color = this.color;
 
 	//update width
-	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 2 + 'px';
+
+	let style = getComputedStyle(this.inputEl);
+	this.testEl.style.fontFamily = style.fontFamily;
+	this.testEl.style.fontSize = style.fontSize;
+	this.testEl.style.fontWeight = style.fontWeight;
+	this.testEl.style.fontStyle = style.fontStyle;
+	this.testEl.style.letterSpacing = style.letterSpacing;
+	this.testEl.style.textTransform = style.textTransform;
+	this.testEl.style.padding = style.padding;
+	this.testEl.style.margin = style.margin;
+	this.testEl.style.border = style.border;
 
 	//update recent list
 	this.recentEl.innerHTML = '';
@@ -981,7 +982,7 @@ AppAudio.prototype.info = function info (msg, icon) {
 	this.contentEl.title = this.inputEl.value;
 
 	this.testEl.innerHTML = this.inputEl.value;
-	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 5 + 'px';
+	this.inputEl.style.width = parseInt(getComputedStyle(this.testEl).width) + 2 + 'px';
 
 	return this;
 };

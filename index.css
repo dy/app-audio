@@ -87,13 +87,13 @@ body.app-audio-container {
 	margin: 0;
 	padding: 0;
 	outline: none;
-	font-size: 1rem;
+	font-size: inherit;
 	font-family: inherit;
 	display: inline;
 	line-height: 1;
 	color: inherit;
 	pointer-events: none;
-	font-weight: bold;
+	font-weight: inherit;
 	min-width: 2em;
 	text-overflow: ellipsis;
 	max-width: 320px;
@@ -195,7 +195,7 @@ body.app-audio-container {
 }
 .aa-items:before {
 	content: attr(data-title);
-	font-weight: bold;
+	font-weight: inherit;
 	padding-left: .5rem;
 	display: block;
 }
