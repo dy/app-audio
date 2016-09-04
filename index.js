@@ -1,7 +1,5 @@
 /**
- * Sound input component
- *
- * @module sound-input
+ * @module app-audio
  */
 'use strict';
 
@@ -40,7 +38,7 @@ function AppAudio (opts) {
 		}
 
 		//load predefined source
-		else if (this.source) {
+		if (!this.current && this.source) {
 			this.set(this.source);
 		}
 
@@ -173,8 +171,8 @@ AppAudio.prototype.init = function init (opts) {
 			<i class="aa-icon">${this.icons.eject}</i>
 			<input class="aa-input" value="" readonly/>
 		</label>
-		<a href="#playback" class="aa-button aa-button-play" hidden><i class="aa-icon"></i></a>
-		<a href="#next" class="aa-button aa-button-next" hidden><i class="aa-icon">${this.icons.next}</i></a>
+		<button class="aa-button aa-button-play" hidden><i class="aa-icon"></i></button>
+		<button class="aa-button aa-button-next" hidden><i class="aa-icon">${this.icons.next}</i></button>
 	`;
 	this.iconEl = this.element.querySelector('.aa-icon');
 	this.contentEl = this.element.querySelector('.aa-content');
@@ -385,17 +383,26 @@ AppAudio.prototype.init = function init (opts) {
 		this.dropEl.className = 'aa-drop';
 		this.container.appendChild(this.dropEl);
 
-		// this.container.addEventListener('dragstart', (e) => {
-			//ignore dragging the container
-			//FIXME: maybe we need a bit more specifics here, by inner elements
-		// 	e.preventDefault();
-		// 	return false;
-		// }, false);
+		let isInside = false;
+		this.container.addEventListener('dragstart', (e) => {
+			isInside = true;
+		}, false);
+		this.container.addEventListener('dragend', (e) => {
+			isInside = false;
+		}, false);
+
 		this.container.addEventListener('dragover', (e) => {
+			if (isInside) return;
+
 			e.preventDefault();
 		}, false);
 
 		this.container.addEventListener('drop', (e) => {
+			if (isInside) {
+				isInside = false;
+				return;
+			}
+
 			e.preventDefault();
 			dragleave(e);
 
@@ -404,6 +411,8 @@ AppAudio.prototype.init = function init (opts) {
 		}, false);
 
 		this.container.addEventListener('dragenter', e => {
+			if (isInside) return;
+
 			count++;
 
 			if (count > 1) return;
@@ -532,7 +541,7 @@ AppAudio.prototype.set = function (src) {
 
 		this.autoplay ? this.play() : this.pause();
 
-		this.emit('ready', this.micNode, this.currentSource);
+		this.emit('ready', this.gainNode, this.currentSource);
 
 		return this;
 	}
@@ -587,7 +596,7 @@ AppAudio.prototype.set = function (src) {
 
 			this.autoplay ? this.play() : this.pause();
 
-			this.emit('ready', this.player.node, src);
+			this.emit('ready', this.gainNode, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -726,7 +735,7 @@ AppAudio.prototype.set = function (src) {
 			this.info(src, this.icons.url);
 			this.player.node.connect(this.gainNode);
 			this.autoplay ? this.play() : this.pause();
-			this.emit('ready', this.player.node, src);
+			this.emit('ready', this.gainNode, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -765,8 +774,9 @@ AppAudio.prototype.set = function (src) {
 		}).on('load', () => {
 			that.reset();
 
-			that.player = player;
+			that.currentSource = src;
 
+			that.player = player;
 
 			that.addRecent(titleHtml, src);
 			that.save && that.saveSources();
@@ -778,7 +788,7 @@ AppAudio.prototype.set = function (src) {
 
 			that.autoplay ? that.play() : that.pause();
 
-			that.emit('ready', that.player.node, streamUrl);
+			that.emit('ready', that.gainNode, streamUrl);
 		}).on('error', (err) => {
 			that.restoreState();
 			that.error(err);

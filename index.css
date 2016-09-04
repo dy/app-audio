@@ -33,8 +33,22 @@ body.app-audio-container {
 	-webkit-user-select: none;
 	-moz-user-select: none;
 	user-select: none;
-	padding: 0 .5rem;
+	padding: 0 1rem;
 	min-width: 200px;
+}
+.aa-button {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	background: none;
+	outline: none;
+	border: none;
+	color: inherit;
+	cursor: pointer;
+	line-height: 2rem;
+	display: inline-block;
+	z-index: 1;
+	position: relative;
 }
 .aa-icon {
 	fill: currentColor;
@@ -103,13 +117,6 @@ body.app-audio-container {
 	.aa-input {
 		max-width: calc(100vw - 7rem);
 	}
-}
-.aa-button {
-	line-height: 2rem;
-	display: inline-block;
-	margin-left: .5rem;
-	z-index: 1;
-	position: relative;
 }
 .aa-progress {
 	margin: 0;
