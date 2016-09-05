@@ -38,6 +38,7 @@
   "license": "MIT",
   "dependencies": {
     "audio-context": "^0.1.0",
+    "audio-decode": "^1.0.2",
     "brfs": "^1.4.3",
     "capitalize-first-letter": "^1.0.0",
     "color-alpha": "^1.0.0",

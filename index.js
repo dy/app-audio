@@ -16,6 +16,7 @@ const isObject = require('is-plain-obj');
 const Player = require('web-audio-player');
 const pad = require('left-pad');
 const capfirst = require('capitalize-first-letter');
+const decode = require('audio-decode');
 require('get-float-time-domain-data');
 
 module.exports = AppAudio;
@@ -33,12 +34,12 @@ function AppAudio (opts) {
 
 	setTimeout(() => {
 		//load last source
-		if (this.save) {
+		if (!this.source && this.save) {
 			this.loadSources();
 		}
 
 		//load predefined source
-		if (!this.current && this.source) {
+		if (!this.currentSource && this.source) {
 			this.set(this.source);
 		}
 
@@ -603,7 +604,45 @@ AppAudio.prototype.set = function (src) {
 		}).on('end', () => {
 			this.playNext();
 		});
+	}
 
+	//array buf
+	else if (src instanceof ArrayBuffer) {
+		this.reset();
+
+		this.saveState();
+		this.info(`Decoding...`, this.icons.loading);
+
+		decode(src, (buffer) => {
+			this.reset();
+
+			this.bufNode = this.context.createBufferSource();
+			this.bufNode.buffer = buffer;
+			this.bufNode.loop = true;
+			this.bufNode.start();
+
+			this.currentSource = src;
+			this.save && this.saveSources();
+			this.info('Audio', this.icons.record);
+			this.bufNode.connect(this.gainNode);
+			this.autoplay ? this.play() : this.pause();
+			this.emit('ready', this.gainNode, src);
+		}, (err) => {
+			this.error(err);
+		});
+
+		// this.oscNode = this.context.createOscillator();
+		// this.oscNode.type = /sin/.test(src) ? 'sine' : /tri/.test(src) ? 'triangle' : /rect|squ/.test(src) ? 'square' : 'sawtooth';
+		// this.oscNode.frequency.value = 440;
+		// this.oscNode.start();
+
+		// this.currentSource = src;
+		// this.save && this.saveSources();
+		// this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
+		// this.oscNode.connect(this.gainNode);
+
+		this.autoplay ? this.play() : this.pause();
+		this.emit('ready', this.gainNode, src);
 	}
 
 	//soundcloud
