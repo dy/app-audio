@@ -542,7 +542,7 @@ AppAudio.prototype.set = function (src) {
 
 		this.autoplay ? this.play() : this.pause();
 
-		this.emit('ready', this.gainNode, this.currentSource);
+		this.emit('load', this.gainNode, this.currentSource);
 
 		return this;
 	}
@@ -597,7 +597,7 @@ AppAudio.prototype.set = function (src) {
 
 			this.autoplay ? this.play() : this.pause();
 
-			this.emit('ready', this.gainNode, src);
+			this.emit('load', this.gainNode, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -618,31 +618,24 @@ AppAudio.prototype.set = function (src) {
 
 			this.bufNode = this.context.createBufferSource();
 			this.bufNode.buffer = buffer;
-			this.bufNode.loop = true;
+			this.bufNode.loop = this.loop;
 			this.bufNode.start();
+			this.bufNode.addEventListener('ended', () => {
+				this.pause();
+			});
 
 			this.currentSource = src;
 			this.save && this.saveSources();
 			this.info('Audio', this.icons.record);
 			this.bufNode.connect(this.gainNode);
 			this.autoplay ? this.play() : this.pause();
-			this.emit('ready', this.gainNode, src);
+			this.emit('load', this.gainNode, src);
 		}, (err) => {
 			this.error(err);
 		});
 
-		// this.oscNode = this.context.createOscillator();
-		// this.oscNode.type = /sin/.test(src) ? 'sine' : /tri/.test(src) ? 'triangle' : /rect|squ/.test(src) ? 'square' : 'sawtooth';
-		// this.oscNode.frequency.value = 440;
-		// this.oscNode.start();
-
-		// this.currentSource = src;
-		// this.save && this.saveSources();
-		// this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
-		// this.oscNode.connect(this.gainNode);
-
 		this.autoplay ? this.play() : this.pause();
-		this.emit('ready', this.gainNode, src);
+		this.emit('load', this.gainNode, src);
 	}
 
 	//soundcloud
@@ -722,7 +715,7 @@ AppAudio.prototype.set = function (src) {
 		this.info(capfirst(this.oscNode.type), this.icons[this.oscNode.type]);
 		this.oscNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('ready', this.gainNode, src);
+		this.emit('load', this.gainNode, src);
 
 	}
 	else if (/noise/.test(src)) {
@@ -736,7 +729,7 @@ AppAudio.prototype.set = function (src) {
 		}
 		this.bufNode = this.context.createBufferSource();
 		this.bufNode.buffer = buffer;
-		this.bufNode.loop = true;
+		this.bufNode.loop = this.loop;
 		this.bufNode.start();
 
 		this.currentSource = src;
@@ -744,7 +737,7 @@ AppAudio.prototype.set = function (src) {
 		this.info('Noise', this.icons.whitenoise);
 		this.bufNode.connect(this.gainNode);
 		this.autoplay ? this.play() : this.pause();
-		this.emit('ready', this.gainNode, src);
+		this.emit('load', this.gainNode, src);
 	}
 
 	//url
@@ -774,7 +767,7 @@ AppAudio.prototype.set = function (src) {
 			this.info(src, this.icons.url);
 			this.player.node.connect(this.gainNode);
 			this.autoplay ? this.play() : this.pause();
-			this.emit('ready', this.gainNode, src);
+			this.emit('load', this.gainNode, src);
 		}).on('error', (err) => {
 			this.restoreState();
 			this.error(err);
@@ -827,7 +820,7 @@ AppAudio.prototype.set = function (src) {
 
 			that.autoplay ? that.play() : that.pause();
 
-			that.emit('ready', that.gainNode, streamUrl);
+			that.emit('load', that.gainNode, streamUrl);
 		}).on('error', (err) => {
 			that.restoreState();
 			that.error(err);

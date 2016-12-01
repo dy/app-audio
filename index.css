@@ -26,15 +26,14 @@ body.app-audio-container {
 /** Components */
 .app-audio {
 	position: absolute;
-	top: .5rem;
 	left: 0;
 	line-height: 2rem;
 	font-family: sans-serif;
 	-webkit-user-select: none;
 	-moz-user-select: none;
 	user-select: none;
-	padding: 0 1rem;
-	min-width: 200px;
+	padding: .5rem 0rem 0;
+	width: 100%;
 }
 .aa-button {
 	-webkit-appearance: none;
@@ -67,6 +66,7 @@ body.app-audio-container {
 	line-height: 2rem;
 	cursor: pointer;
 	z-index: 1;
+	padding-left: .5rem;
 }
 .aa-content:before {
 	content: '';
@@ -77,6 +77,7 @@ body.app-audio-container {
 	border-bottom: .13rem dashed currentColor;
 	right: 0;
 	width: calc(100% - 1.6rem);
+	left: .65rem;
 }
 .aa-content.aa-active:before {
 	opacity: .75;

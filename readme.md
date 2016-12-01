@@ -92,7 +92,7 @@ Bind event callback. Available events:
 ```js
 //called whenever new source is set and loaded, like mic, file, signal etc.
 //source audioNode is passed as a first argument, so do connection routine here
-appAudio.on('ready', (audioNode, sourceUrl) => {
+appAudio.on('load', (audioNode, sourceUrl) => {
 	audioNode.connect(myAnalyzer);
 });
 
