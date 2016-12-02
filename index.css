@@ -33,7 +33,6 @@ body.app-audio-container {
 	-moz-user-select: none;
 	user-select: none;
 	padding: .5rem 0rem 0;
-	width: 100%;
 }
 .aa-button {
 	-webkit-appearance: none;
