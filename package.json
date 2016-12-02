@@ -1,6 +1,6 @@
 {
   "name": "app-audio",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Audio source input for your application, demo or tests.",
   "main": "index.js",
   "scripts": {
