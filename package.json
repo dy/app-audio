@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://audio-lab.github.com/input-audio"
+    "url": "https://github.com/dfcreative/app-audio"
   },
   "browserify": {
     "transform": [
