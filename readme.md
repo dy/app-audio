@@ -1,5 +1,7 @@
 # app-audio [![unstable](http://badges.github.io/stability-badges/dist/unstable.svg)](http://github.com/badges/stability-badges)
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/dfcreative/app-audio.svg)](https://greenkeeper.io/)
+
 Get audio for your application, demo or tests.
 
 It will create a component with every possible audio source for Web Audio API - an audio file, url, soundcloud, microphone or primitive signal. Also it tackles play/stop/reset controls, drag-n-drop, recent tracks, soundcloud tracklists, queuing multiple tracks, saving to session storage, progress bar, looping etc.
